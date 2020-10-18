@@ -1,0 +1,12 @@
+resolver: lts-16.16
+compiler: ghc-9.1.0
+allow-newer: true
+system-ghc: true
+
+packages:
+- '.'
+
+extra-deps:
+- git: https://github.com/tweag/linear-base.git
+  commit: 121d3f1d100a715ac280c1e3efc5cf7a014a978e
+
