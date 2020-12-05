@@ -3,7 +3,7 @@
 {-# LANGUAGE RebindableSyntax #-}
 
 import           Test.HUnit
-import           Test.HUnit.Linear
+import           Test.HUnit.Linear ()
 import qualified Prelude
 import           Prelude.Linear hiding (Dual)
 import           Control.Concurrent.Session.Linear
@@ -16,7 +16,11 @@ main :: IO Counts
 main = runTestTT tests
   where
     tests :: Test
-    tests = TestList [pingWorks, calcWorks]
+    tests = TestList
+      [ pingWorks
+      , calcWorks
+      , cancelWorks
+      ]
 
 
 -- * Ping
@@ -93,3 +97,30 @@ calcWorks = TestLabel "calc" $ TestList
             return x
         )
       return $ move (x == 9)
+
+
+-- * Cancellation
+
+cancelWorks :: Test
+cancelWorks = TestLabel "cancel" $ TestList
+  [ TestLabel "recv" $ TestCase (assert cancelRecv)
+  , TestLabel "send" $ TestCase (assert cancelSend)
+  ]
+  where
+    cancelRecv :: Linear.IO (Ur ())
+    cancelRecv = do
+      connect cancel
+        (\s -> do
+            ((), s) <- recv s
+            close s
+        )
+      return $ Ur ()
+
+    cancelSend :: Linear.IO (Ur ())
+    cancelSend = do
+      connect cancel
+        (\s -> do
+            s <- send () s
+            close s
+        )
+      return $ Ur ()

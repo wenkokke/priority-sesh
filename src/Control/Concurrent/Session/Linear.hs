@@ -81,70 +81,54 @@ instance Session End where
 
 -- * Communication primitives
 
-send :: a %1 -> Send a s %1 ->
-        Linear.IO s
+send :: a %1 -> Send a s %1 -> Linear.IO s
 send x (Send sender) = do
   (here, there) <- new
-  OneShot.send sender (x, there)
+  Ur () <- OneShot.sendAsync sender (x, there)
   return here
 
-recv :: Recv a s %1 ->
-        Linear.IO (a, s)
+recv :: Recv a s %1 -> Linear.IO (a, s)
 recv (Recv receiver) = do
   (x, here) <- OneShot.receive receiver
   return (x, here)
 
-close :: End %1 ->
-         Linear.IO ()
+close :: End %1 -> Linear.IO ()
 close (End sender receiver) = do
-  OneShot.send sender ()
+  Ur () <- OneShot.sendAsync sender ()
   OneShot.receive receiver
 
 cancel :: s %1 -> Linear.IO ()
 cancel s = return $ Unsafe.toLinear2 const () s
 
-connect :: Session s =>
-           (s %1 -> Linear.IO ()) ->
-           (Dual s %1 -> Linear.IO a) ->
-           Linear.IO a
-connect p1 p2 = do
+connect :: Session s => (s %1 -> Linear.IO ()) -> (Dual s %1 -> Linear.IO a) -> Linear.IO a
+connect proc1 proc2 = do
   (here, there) <- new
-  consume <$> forkLinearIO (p1 there)
-  p2 here
+  consume <$> forkLinearIO (proc1 there)
+  proc2 here
 
 
 -- * Binary choice
 
 type Select s1 s2 = Send (Either (Dual s1) (Dual s2)) End
 
-selectLeft :: (Session s1, Session s2) =>
-              Select s1 s2 %1 ->
-              Linear.IO s1
-selectLeft = select Left
+type Offer s1 s2 = Recv (Either s1 s2) End
+
+selectLeft :: (Session s1, Session s2) => Select s1 s2 %1 -> Linear.IO s1
+selectLeft s = do
   (here, there) <- new
   s <- send (Left there) s
   cancel s
   return here
 
-selectRight :: (Session s1, Session s2) =>
-               Select s1 s2 %1 ->
-               Linear.IO s2
+selectRight :: (Session s1, Session s2) => Select s1 s2 %1 -> Linear.IO s2
 selectRight s = do
   (here, there) <- new
   s <- send (Right there) s
   cancel s
   return here
 
-
-type Offer s1 s2 = Recv (Either s1 s2) End
-
-offerEither :: (Session s1, Session s2) =>
-               (Either s1 s2 %1 -> Linear.IO a) ->
-               Offer s1 s2 %1 ->
-               Linear.IO a
+offerEither :: (Session s1, Session s2) => (Either s1 s2 %1 -> Linear.IO a) -> Offer s1 s2 %1 -> Linear.IO a
 offerEither match s = do
   (e, s) <- recv s
   cancel s
   match e
-
-

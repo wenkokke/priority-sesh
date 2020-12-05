@@ -1,36 +1,49 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Control.Concurrent.OneShot.Linear
   ( Sender
   , Receiver
   , new
   , send
+  , sendAsync
   , receive
   ) where
 
 import           Prelude.Linear
 import           Control.Concurrent.MVar.Linear
-import           Control.Monad.Linear ((<$>))
+import           Control.Exception
+import           Control.Monad.Linear
 import           Data.Bifunctor.Linear (bimap)
+import           Data.Proxy
+import           Data.Unrestricted.Linear
 import qualified System.IO.Linear as Linear
+import qualified Unsafe.Linear as Unsafe
 
 
 data Sender a where
-  Sender :: MVar a %1-> Sender a
+  Sender :: MVar a %1 -> Sender a
 
 data Receiver a where
-  Receiver :: MVar a %1-> Receiver a
+  Receiver :: MVar a %1 -> Receiver a
 
 
 new :: Linear.IO (Sender a, Receiver a)
 new = bimap (Sender . unur) (Receiver . unur) . dup2 <$> newEmptyMVar
 
-send :: Sender a %1-> a %1-> Linear.IO ()
-send (Sender mvar) x =
+send :: Sender a %1 -> a %1 -> Linear.IO (Ur ())
+send (Sender mvar) x = do
   putMVar mvar x
+  return $ Ur ()
 
-receive :: Receiver a %1-> Linear.IO a
+receive :: Receiver a %1 -> Linear.IO a
 receive (Receiver mvar) =
   takeMVar mvar
+
+sendAsync :: Sender a %1 -> a %1 -> Linear.IO (Ur ())
+sendAsync sender x = suppress $ send sender x
+  where
+    suppress :: Linear.IO (Ur ()) %1 -> Linear.IO (Ur ())
+    suppress x = Unsafe.toLinear2 Linear.catch x $ \(e :: BlockedIndefinitelyOnMVar) -> return $ Ur ()
