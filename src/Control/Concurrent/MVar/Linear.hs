@@ -1,6 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RebindableSyntax #-}
-
 module Control.Concurrent.MVar.Linear
   ( MVar
   , newEmptyMVar
@@ -11,8 +8,7 @@ module Control.Concurrent.MVar.Linear
 import           Prelude.Linear hiding (IO)
 import           Control.Concurrent.MVar (MVar)
 import qualified Control.Concurrent.MVar as MVar
-import           Data.Unrestricted.Linear (Ur(..))
-import qualified Data.Unrestricted.Linear as Ur
+import           Data.Unrestricted.Linear
 import qualified System.IO.Linear as Linear
 import           Unsafe.Linear as Unsafe
 

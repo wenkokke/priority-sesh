@@ -8,13 +8,11 @@ module Control.Concurrent.OneShot.Linear
   , Receiver
   , new
   , send
-  , sendAsync
   , receive
   ) where
 
 import           Prelude.Linear
 import           Control.Concurrent.MVar.Linear
-import           Control.Exception
 import           Control.Monad.Linear
 import           Data.Bifunctor.Linear (bimap)
 import           Data.Proxy
@@ -41,9 +39,3 @@ send (Sender mvar) x = do
 receive :: Receiver a %1 -> Linear.IO a
 receive (Receiver mvar) =
   takeMVar mvar
-
-sendAsync :: Sender a %1 -> a %1 -> Linear.IO (Ur ())
-sendAsync sender x = suppress $ send sender x
-  where
-    suppress :: Linear.IO (Ur ()) %1 -> Linear.IO (Ur ())
-    suppress x = Unsafe.toLinear2 Linear.catch x $ \(e :: BlockedIndefinitelyOnMVar) -> return $ Ur ()

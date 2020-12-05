@@ -3,7 +3,7 @@
 {-# LANGUAGE RebindableSyntax #-}
 
 import           Test.HUnit
-import           Test.HUnit.Linear ()
+import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
 import qualified Prelude
 import           Prelude.Linear hiding (Dual)
 import           Control.Concurrent.Session.Linear
@@ -59,6 +59,7 @@ calcWorks = TestLabel "calc" $ TestList
   , TestLabel "add" $ TestCase (assert add)
   ]
   where
+    -- Calculator server, which offers negation and addition.
     calcServer :: CalcServer Int %1 -> Linear.IO ()
     calcServer = offerEither match
       where
@@ -73,7 +74,7 @@ calcWorks = TestLabel "calc" $ TestList
           s <- send (x + y) s
           close s
 
-    neg :: Linear.IO (Ur Bool)
+    -- Server offers calcuator, client chooses (negate 42).
     neg = do
       x <- connect calcServer
         (\s -> do
@@ -85,7 +86,7 @@ calcWorks = TestLabel "calc" $ TestList
         )
       return $ move (x == -42)
 
-    add :: Linear.IO (Ur Bool)
+    -- Server offers calculator, client chooses 4 + 5.
     add = do
       x <- connect calcServer
         (\s -> do
@@ -101,13 +102,15 @@ calcWorks = TestLabel "calc" $ TestList
 
 -- * Cancellation
 
+
+-- |Test the interaction of cancel with send and receive.
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assert cancelRecv)
+  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar cancelRecv)
   , TestLabel "send" $ TestCase (assert cancelSend)
   ]
   where
-    cancelRecv :: Linear.IO (Ur ())
+    -- Server cancels, client tries to receive.
     cancelRecv = do
       connect cancel
         (\s -> do
@@ -116,7 +119,7 @@ cancelWorks = TestLabel "cancel" $ TestList
         )
       return $ Ur ()
 
-    cancelSend :: Linear.IO (Ur ())
+    -- Server cancels, client tries to send.
     cancelSend = do
       connect cancel
         (\s -> do

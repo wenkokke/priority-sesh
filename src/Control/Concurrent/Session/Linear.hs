@@ -26,10 +26,12 @@ module Control.Concurrent.Session.Linear
   ) where
 
 import           Prelude.Linear hiding (Dual)
+import           Control.Exception
 import           Control.Concurrent.Linear
 import qualified Control.Concurrent.OneShot.Linear as OneShot
 import           Control.Monad.Linear
 import           Data.Bifunctor.Linear
+import           Data.Unrestricted.Linear
 import qualified System.IO.Linear as Linear
 import qualified Unsafe.Linear as Unsafe
 
@@ -55,7 +57,16 @@ data End where
 
 -- * Duality and session initiation
 
-class (Session (Dual s), Dual (Dual s) ~ s) => Session s where
+instance Consumable (Send a s) where
+  consume = Unsafe.toLinear $ \s -> ()
+
+instance Consumable (Recv a s) where
+  consume = Unsafe.toLinear $ \s -> ()
+
+instance Consumable End where
+  consume = Unsafe.toLinear $ \s -> ()
+
+class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
   type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
 
@@ -81,10 +92,16 @@ instance Session End where
 
 -- * Communication primitives
 
+connect :: Session s => (s %1 -> Linear.IO ()) -> (Dual s %1 -> Linear.IO a) -> Linear.IO a
+connect proc1 proc2 = do
+  (here, there) <- new
+  consume <$> forkLinearIO (proc1 there)
+  proc2 here
+
 send :: a %1 -> Send a s %1 -> Linear.IO s
 send x (Send sender) = do
   (here, there) <- new
-  Ur () <- OneShot.sendAsync sender (x, there)
+  Ur () <- quiet $ OneShot.send sender (x, there)
   return here
 
 recv :: Recv a s %1 -> Linear.IO (a, s)
@@ -94,17 +111,16 @@ recv (Recv receiver) = do
 
 close :: End %1 -> Linear.IO ()
 close (End sender receiver) = do
-  Ur () <- OneShot.sendAsync sender ()
-  OneShot.receive receiver
+  Ur () <- quiet $ OneShot.send sender ()
+  Ur () <- quiet $ move <$> OneShot.receive receiver
+  return $ ()
 
-cancel :: s %1 -> Linear.IO ()
-cancel s = return $ Unsafe.toLinear2 const () s
+cancel :: Session s => s %1 -> Linear.IO ()
+cancel s = return $ consume s
 
-connect :: Session s => (s %1 -> Linear.IO ()) -> (Dual s %1 -> Linear.IO a) -> Linear.IO a
-connect proc1 proc2 = do
-  (here, there) <- new
-  consume <$> forkLinearIO (proc1 there)
-  proc2 here
+-- |Suppress BlockedIndefinitelyOnMVar exceptions.
+quiet :: Linear.IO (Ur ()) %1 -> Linear.IO (Ur ())
+quiet x = Unsafe.toLinear2 Linear.catch x (\BlockedIndefinitelyOnMVar -> return $ Ur ())
 
 
 -- * Binary choice
