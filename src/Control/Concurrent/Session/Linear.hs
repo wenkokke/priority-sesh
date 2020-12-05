@@ -1,15 +1,28 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RebindableSyntax #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Control.Concurrent.Session.Linear
   ( Session(Dual)
+  , connect
   , Send
   , Recv
   , End
+  , send
+  , recv
+  , close
+  , cancel
+  , Select
+  , Offer
+  , selectLeft
+  , selectRight
+  , offerEither
   ) where
 
 import           Prelude.Linear hiding (Dual)
@@ -43,7 +56,7 @@ data End where
 -- * Duality and session initiation
 
 class (Session (Dual s), Dual (Dual s) ~ s) => Session s where
-  type Dual s
+  type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
 
 instance Session s => Session (Send a s) where
@@ -68,27 +81,68 @@ instance Session End where
 
 -- * Communication primitives
 
-send :: Send a s %1-> a %1-> Linear.IO s
-send (Send sender) x = do
-  (mySess, theirSess) <- new
-  OneShot.send sender (x, theirSess)
-  return mySess
+send :: a %1-> Send a s %1->
+        Linear.IO s
+send x (Send sender) = do
+  (here, there) <- new
+  OneShot.send sender (x, there)
+  return here
 
-recv :: Recv a s %1-> Linear.IO (a, s)
+recv :: Recv a s %1->
+        Linear.IO (a, s)
 recv (Recv receiver) = do
-  (x, mySess) <- OneShot.receive receiver
-  return (x, mySess)
+  (x, here) <- OneShot.receive receiver
+  return (x, here)
 
-close :: End %1-> Linear.IO ()
+close :: End %1->
+         Linear.IO ()
 close (End sender receiver) = do
   OneShot.send sender ()
   OneShot.receive receiver
 
+cancel :: s %1-> Linear.IO ()
+cancel s = return $ Unsafe.toLinear2 const () s
+
 connect :: Session s =>
            (s %1-> Linear.IO ()) ->
-           (Dual s %1-> Linear.IO ()) ->
-           Linear.IO ()
+           (Dual s %1-> Linear.IO a) ->
+           Linear.IO a
 connect p1 p2 = do
-  (theirSess, mySess) <- new
-  consume <$> forkLinearIO (p1 theirSess)
-  p2 mySess
+  (here, there) <- new
+  consume <$> forkLinearIO (p1 there)
+  p2 here
+
+
+-- * Binary choice
+
+type Select s1 s2 = Send (Either (Dual s1) (Dual s2)) End
+
+selectLeft :: (Session s1, Session s2) =>
+              Select s1 s2 %1->
+              Linear.IO s1
+selectLeft s = do
+  (here, there) <- new
+  s' <- send (Left there) s
+  cancel s'
+  return here
+
+selectRight :: (Session s1, Session s2) =>
+               Select s1 s2 %1->
+               Linear.IO s2
+selectRight s = do
+  (here, there) <- new
+  s' <- send (Right there) s
+  cancel s'
+  return here
+
+
+type Offer s1 s2 = Recv (Either s1 s2) End
+
+offerEither :: (Session s1, Session s2) =>
+               (Either s1 s2 %1-> Linear.IO a) ->
+               Offer s1 s2 %1->
+               Linear.IO a
+offerEither match s = do
+  (e, s') <- recv s
+  cancel s'
+  match e
