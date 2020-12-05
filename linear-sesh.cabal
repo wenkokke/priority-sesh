@@ -11,8 +11,7 @@ copyright:      © Wen Kokke
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    README.md
-    ChangeLog.md
+  README.md
 
 source-repository head
   type: git

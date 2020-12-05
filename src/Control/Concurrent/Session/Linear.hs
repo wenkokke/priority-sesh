@@ -39,17 +39,17 @@ import qualified Unsafe.Linear as Unsafe
 
 data Send a s where
   Send :: Session s =>
-          OneShot.Sender (a, Dual s) %1->
+          OneShot.Sender (a, Dual s) %1 ->
           Send a s
 
 data Recv a s where
   Recv :: Session s =>
-          OneShot.Receiver (a, s) %1->
+          OneShot.Receiver (a, s) %1 ->
           Recv a s
 
 data End where
-  End :: OneShot.Sender () %1->
-         OneShot.Receiver () %1->
+  End :: OneShot.Sender () %1 ->
+         OneShot.Receiver () %1 ->
          End
 
 
@@ -81,31 +81,31 @@ instance Session End where
 
 -- * Communication primitives
 
-send :: a %1-> Send a s %1->
+send :: a %1 -> Send a s %1 ->
         Linear.IO s
 send x (Send sender) = do
   (here, there) <- new
   OneShot.send sender (x, there)
   return here
 
-recv :: Recv a s %1->
+recv :: Recv a s %1 ->
         Linear.IO (a, s)
 recv (Recv receiver) = do
   (x, here) <- OneShot.receive receiver
   return (x, here)
 
-close :: End %1->
+close :: End %1 ->
          Linear.IO ()
 close (End sender receiver) = do
   OneShot.send sender ()
   OneShot.receive receiver
 
-cancel :: s %1-> Linear.IO ()
+cancel :: s %1 -> Linear.IO ()
 cancel s = return $ Unsafe.toLinear2 const () s
 
 connect :: Session s =>
-           (s %1-> Linear.IO ()) ->
-           (Dual s %1-> Linear.IO a) ->
+           (s %1 -> Linear.IO ()) ->
+           (Dual s %1 -> Linear.IO a) ->
            Linear.IO a
 connect p1 p2 = do
   (here, there) <- new
@@ -118,31 +118,33 @@ connect p1 p2 = do
 type Select s1 s2 = Send (Either (Dual s1) (Dual s2)) End
 
 selectLeft :: (Session s1, Session s2) =>
-              Select s1 s2 %1->
+              Select s1 s2 %1 ->
               Linear.IO s1
-selectLeft s = do
+selectLeft = select Left
   (here, there) <- new
-  s' <- send (Left there) s
-  cancel s'
+  s <- send (Left there) s
+  cancel s
   return here
 
 selectRight :: (Session s1, Session s2) =>
-               Select s1 s2 %1->
+               Select s1 s2 %1 ->
                Linear.IO s2
 selectRight s = do
   (here, there) <- new
-  s' <- send (Right there) s
-  cancel s'
+  s <- send (Right there) s
+  cancel s
   return here
 
 
 type Offer s1 s2 = Recv (Either s1 s2) End
 
 offerEither :: (Session s1, Session s2) =>
-               (Either s1 s2 %1-> Linear.IO a) ->
-               Offer s1 s2 %1->
+               (Either s1 s2 %1 -> Linear.IO a) ->
+               Offer s1 s2 %1 ->
                Linear.IO a
 offerEither match s = do
-  (e, s') <- recv s
-  cancel s'
+  (e, s) <- recv s
+  cancel s
   match e
+
+
