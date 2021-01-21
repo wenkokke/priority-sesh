@@ -11,7 +11,6 @@ import           Control.Monad.Linear
 import qualified System.IO.Linear as Linear
 import qualified Unsafe.Linear as Unsafe
 
-
 main :: IO Counts
 main = runTestTT tests
   where

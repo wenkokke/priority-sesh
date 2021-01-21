@@ -1,150 +1,117 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DataKinds               #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE GADTs                   #-}
+{-# LANGUAGE KindSignatures          #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE NoImplicitPrelude       #-}
+{-# LANGUAGE RankNTypes              #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeFamilyDependencies  #-}
+{-# LANGUAGE TypeOperators           #-}
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
-module Control.Concurrent.Session.Linear
-  ( Session(Dual)
-  , connect
-  , Send
-  , Recv
-  , End
-  , send
-  , recv
-  , close
-  , cancel
-  , Select
-  , Offer
-  , selectLeft
-  , selectRight
-  , offerEither
-  ) where
 
-import           Prelude.Linear hiding (Dual)
-import           Control.Exception
-import           Control.Concurrent.Linear
-import qualified Control.Concurrent.OneShot.Linear as OneShot
+module Control.Concurrent.Session.Linear where
+
+import           Prelude.Linear hiding (Dual, IO)
+import qualified Control.Concurrent.Session.Raw.Linear as Raw
 import           Control.Monad.Linear
-import           Data.Bifunctor.Linear
-import           Data.Unrestricted.Linear
+import           Data.Kind (Type)
+import           GHC.TypeLits (Nat)
+import qualified GHC.TypeLits as Nat
 import qualified System.IO.Linear as Linear
+import           System.IO.Unsafe (unsafePerformIO)
 import qualified Unsafe.Linear as Unsafe
 
+data Priority
+  = Bot
+  | Val Nat
+  | Top
 
+type family (p :: Priority) <=? (q :: Priority) :: Bool where
+  'Bot   <=? 'Bot   = 'True
+  'Bot   <=? 'Val m = 'True
+  'Bot   <=? 'Top   = 'True
+  'Val n <=? 'Bot   = 'False
+  'Val n <=? 'Val m = n Nat.<=? m
+  'Val n <=? 'Top   = 'True
+  'Top   <=? 'Bot   = 'False
+  'Top   <=? 'Val m = 'False
+  'Top   <=? 'Top   = 'True
 
--- * Session types
+type (p :: Priority) <= (q :: Priority) = (p <=? q) ~ 'True
 
-data Send a s where
-  Send :: Session s =>
-          OneShot.Sender (a, Dual s) %1 ->
-          Send a s
+newtype Sesh
+  (t :: Type)     -- ^ Session token.
+  (l :: Priority) -- ^ Lower priority bound.
+  (u :: Priority) -- ^ Upper priority bound.
+  (a :: Type)     -- ^ Underlying type.
+  = Sesh (Linear.IO a)
 
-data Recv a s where
-  Recv :: Session s =>
-          OneShot.Receiver (a, s) %1 ->
-          Recv a s
+-- |Unsafely unwrap a session.
+unSesh :: Sesh t l u a %1 -> Linear.IO a
+unSesh (Sesh x) = x
 
-data End where
-  End :: OneShot.Sender () %1 ->
-         OneShot.Receiver () %1 ->
-         End
+data Send (o :: Nat) (a :: Type) (s :: Type)
+data Recv (o :: Nat) (a :: Type) (s :: Type)
+data End  (o :: Nat)
 
-
--- * Duality and session initiation
-
-instance Consumable (Send a s) where
-  consume = Unsafe.toLinear $ \s -> ()
-
-instance Consumable (Recv a s) where
-  consume = Unsafe.toLinear $ \s -> ()
-
-instance Consumable End where
-  consume = Unsafe.toLinear $ \s -> ()
-
-class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
+class ( Session (Dual s)
+      , Dual (Dual s) ~ s
+      , Raw.Session (Repr s)
+      , Repr (Dual s) ~ Raw.Dual (Repr s)
+      ) => Session s where
   type Dual s = result | result -> s
-  new :: Linear.IO (s, Dual s)
+  type Repr s
 
-instance Session s => Session (Send a s) where
-  type Dual (Send a s) = Recv a (Dual s)
-  new = do
-    (sender, receiver) <- OneShot.new
-    return (Send sender, Recv receiver)
+instance Session s => Session (Send o a s) where
+  type Dual (Send o a s) = Recv o a (Dual s)
+  type Repr (Send o a s) = Raw.Send a (Repr s)
 
-instance Session s => Session (Recv a s) where
-  type Dual (Recv a s) = Send a (Dual s)
-  new = do
-    (sender, receiver) <- OneShot.new
-    return (Recv receiver, Send sender)
+instance Session s => Session (Recv o a s) where
+  type Dual (Recv o a s) = Send o a (Dual s)
+  type Repr (Recv o a s) = Raw.Recv a (Repr s)
 
-instance Session End where
-  type Dual End = End
-  new = do
-    (sender1, receiver1) <- OneShot.new
-    (sender2, receiver2) <- OneShot.new
-    return (End sender1 receiver2, End sender2 receiver1)
+instance Session (End o) where
+  type Dual (End o) = End o
+  type Repr (End o) = Raw.End
 
+data Chan t s = (Session s) => Chan (Repr s)
 
--- * Communication primitives
+new :: Session s => Sesh t 'Top 'Bot (Chan t s, Chan t (Dual s))
+new = Sesh $ Raw.new >>= \(here, there) -> return (Chan here, Chan there)
 
-connect :: Session s => (s %1 -> Linear.IO ()) -> (Dual s %1 -> Linear.IO a) -> Linear.IO a
-connect proc1 proc2 = do
-  (here, there) <- new
-  consume <$> forkLinearIO (proc1 there)
-  proc2 here
+ibind :: (q <= p') => (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q a %1 -> Sesh t p q' b
+ibind mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
 
-send :: a %1 -> Send a s %1 -> Linear.IO s
-send x (Send sender) = do
-  (here, there) <- new
-  Ur () <- quiet $ OneShot.send sender (x, there)
-  return here
+ireturn :: a -> Sesh t p p a
+ireturn x = Sesh $ return x
 
-recv :: Recv a s %1 -> Linear.IO (a, s)
-recv (Recv receiver) = do
-  (x, here) <- OneShot.receive receiver
-  return (x, here)
+withNew :: Session s => ((Chan t s, Chan t (Dual s)) %1 -> Sesh t 'Top q a) -> Sesh t 'Top q a
+withNew mf = ibind mf new
 
-close :: End %1 -> Linear.IO ()
-close (End sender receiver) = do
-  Ur () <- quiet $ OneShot.send sender ()
-  Ur () <- quiet $ move <$> OneShot.receive receiver
-  return $ ()
+spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
+spawn mx = Sesh $ Raw.spawn (unSesh mx)
 
-cancel :: Session s => s %1 -> Linear.IO ()
-cancel s = return $ consume s
+send :: Session s => (a, Chan t (Send o a s)) %1 -> Sesh t 'Top ('Val o) (Chan t s)
+send (x, Chan ch) = Sesh $ Raw.send (x, ch) >>= \ch -> return (Chan ch)
 
--- |Suppress BlockedIndefinitelyOnMVar exceptions.
-quiet :: Linear.IO (Ur ()) %1 -> Linear.IO (Ur ())
-quiet x = Unsafe.toLinear2 Linear.catch x (\BlockedIndefinitelyOnMVar -> return $ Ur ())
+recv :: Session s => Chan t (Recv o a s) %1 -> Sesh t 'Top ('Val o) (a, Chan t s)
+recv (Chan ch) = Sesh $ Raw.recv ch >>= \(x, ch) -> return (x, Chan ch)
 
+close :: Chan t (End o) %1 -> Sesh t 'Top ('Val o) ()
+close (Chan ch) = Sesh $ Raw.close ch
 
--- * Binary choice
+runSesh :: (forall t. Sesh t p q a) -> Linear.IO a
+runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 
-type Select s1 s2 = Send (Either (Dual s1) (Dual s2)) End
-
-type Offer s1 s2 = Recv (Either s1 s2) End
-
-selectLeft :: (Session s1, Session s2) => Select s1 s2 %1 -> Linear.IO s1
-selectLeft s = do
-  (here, there) <- new
-  s <- send (Left there) s
-  cancel s
-  return here
-
-selectRight :: (Session s1, Session s2) => Select s1 s2 %1 -> Linear.IO s2
-selectRight s = do
-  (here, there) <- new
-  s <- send (Right there) s
-  cancel s
-  return here
-
-offerEither :: (Session s1, Session s2) => (Either s1 s2 %1 -> Linear.IO a) -> Offer s1 s2 %1 -> Linear.IO a
-offerEither match s = do
-  (e, s) <- recv s
-  cancel s
-  match e
+-- -}
+-- -}
+-- -}
+-- -}
+-- -}
