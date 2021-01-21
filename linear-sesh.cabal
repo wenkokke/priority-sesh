@@ -44,6 +44,7 @@ test-suite test-linear-sesh
     Test.hs
   other-modules:
     Test.HUnit.Linear
+    Control.Concurrent.Session.Raw.Linear.Test
   hs-source-dirs:      
     test
   build-depends:

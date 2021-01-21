@@ -84,6 +84,9 @@ withNew k = new >>= k
 spawn :: Linear.IO () %1 -> Linear.IO ()
 spawn k = consume <$> forkLinearIO k
 
+connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
+connect k1 k2 = new >>= \(there, here) -> spawn (k1 there) >>= \() -> k2 here
+
 send :: (a, Send a s) %1 -> Linear.IO s
 send (x, Send sender) = do
   (here, there) <- new

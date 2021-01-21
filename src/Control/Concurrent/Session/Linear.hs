@@ -15,7 +15,37 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 
-module Control.Concurrent.Session.Linear where
+module Control.Concurrent.Session.Linear
+  -- Priorities
+  ( Priority (..)
+  , type (<=?)
+  , type (<=)
+  -- The |Sesh| monad
+  , Sesh
+  , ibind
+  , (=<<<)
+  , (>>>=)
+  , ireturn
+  -- Session types and channels
+  , Chan
+  , Session (Dual, Pr)
+  , Send
+  , Recv
+  , End
+  -- Communication primitives
+  , withNew
+  , spawn
+  , send
+  , recv
+  , close
+  , cancel
+  -- Binary choice
+  , ChanSelect
+  , ChanOffer
+  , selectLeft
+  , selectRight
+  , offerEither
+  ) where
 
 import           Prelude.Linear hiding (Dual, IO)
 import qualified Control.Concurrent.Session.Raw.Linear as Raw
@@ -26,6 +56,9 @@ import qualified GHC.TypeLits as Nat
 import qualified System.IO.Linear as Linear
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Unsafe.Linear as Unsafe
+
+
+-- * Priorities
 
 data Priority
   = Bot
@@ -43,6 +76,9 @@ type family (p :: Priority) <=? (q :: Priority) :: Bool where
 
 type (p :: Priority) <= (q :: Priority) = (p <=? q) ~ 'True
 
+
+-- * The |Sesh| monad
+
 newtype Sesh
   (t :: Type)     -- ^ Session token.
   (l :: Priority) -- ^ Lower priority bound.
@@ -50,9 +86,29 @@ newtype Sesh
   (a :: Type)     -- ^ Underlying type.
   = Sesh (Linear.IO a)
 
--- |Unsafely unwrap a session.
 unSesh :: Sesh t l u a %1 -> Linear.IO a
 unSesh (Sesh x) = x
+
+ibind :: (q <= p') => (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q a %1 -> Sesh t p q' b
+ibind mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
+
+infixr 1 =<<<
+infixl 1 >>>=
+
+(=<<<) :: (q <= p') => (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q a %1 -> Sesh t p q' b
+(=<<<) mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
+
+(>>>=) :: (q <= p') => Sesh t p q a %1 -> (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q' b
+(>>>=) = flip ibind
+
+ireturn :: a %1 -> Sesh t p p a
+ireturn x = Sesh $ return x
+
+runSesh :: (forall t. Sesh t p q a) -> Linear.IO a
+runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
+
+
+-- * Session types and channels
 
 data Send (o :: Nat) (a :: Type) (s :: Type)
 data Recv (o :: Nat) (a :: Type) (s :: Type)
@@ -83,27 +139,6 @@ instance Session (End o) where
   type Raw  (End o) = Raw.End
 
 data Chan t s = (Session s) => Chan (Raw s)
-
-
--- * Sesh monad
-
-ibind :: (q <= p') => (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q a %1 -> Sesh t p q' b
-ibind mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
-
-infixr 1 =<<<
-infixl 1 >>>=
-
-(=<<<) :: (q <= p') => (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q a %1 -> Sesh t p q' b
-(=<<<) mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
-
-(>>>=) :: (q <= p') => Sesh t p q a %1 -> (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q' b
-(>>>=) = flip ibind
-
-ireturn :: a %1 -> Sesh t p p a
-ireturn x = Sesh $ return x
-
-runSesh :: (forall t. Sesh t p q a) -> Linear.IO a
-runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 
 
 -- * Communication primitives

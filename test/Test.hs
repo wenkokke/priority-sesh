@@ -1,128 +1,17 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RebindableSyntax #-}
+module Main where
 
 import           Test.HUnit
 import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
-import qualified Prelude
-import           Prelude.Linear hiding (Dual)
-import           Control.Concurrent.Session.Linear
-import           Control.Monad.Linear
-import qualified System.IO.Linear as Linear
-import qualified Unsafe.Linear as Unsafe
+import qualified Control.Concurrent.Session.Raw.Linear.Test as Raw
 
 main :: IO Counts
 main = runTestTT tests
   where
     tests :: Test
     tests = TestList
-      [ pingWorks
-      , calcWorks
-      , cancelWorks
+      [ Raw.pingWorks
+      , Raw.calcWorks
+      , Raw.cancelWorks
       ]
 
 
--- * Ping
-
--- |Test sending a ping across threads.
-pingWorks :: Test
-pingWorks = TestLabel "ping" $ TestCase (assert ping)
-  where
-    ping :: Linear.IO (Ur ())
-    ping = do
-      connect
-        (\s -> do
-            s <- send () s
-            close s
-        )
-        (\s -> do
-            ((), s) <- recv s
-            close s
-        )
-      return $ Ur ()
-
-
--- * Calculator
-
-type NegServer n = Recv n (Send n End)
-type AddServer n = Recv n (Recv n (Send n End))
-
-type CalcServer n = Offer (NegServer n) (AddServer n)
-type CalcClient n = Dual (CalcServer n)
-
-
--- |Test using the calculator server for negation.
-calcWorks :: Test
-calcWorks = TestLabel "calc" $ TestList
-  [ TestLabel "neg" $ TestCase (assert neg)
-  , TestLabel "add" $ TestCase (assert add)
-  ]
-  where
-    -- Calculator server, which offers negation and addition.
-    calcServer :: CalcServer Int %1 -> Linear.IO ()
-    calcServer = offerEither match
-      where
-        match :: Either (NegServer Int) (AddServer Int) %1 -> Linear.IO ()
-        match (Left s) = do
-          (x, s) <- recv s
-          s <- send (negate x) s
-          close s
-        match (Right s) = do
-          (x, s) <- recv s
-          (y, s) <- recv s
-          s <- send (x + y) s
-          close s
-
-    -- Server offers calcuator, client chooses (negate 42).
-    neg = do
-      x <- connect calcServer
-        (\s -> do
-            s <- selectLeft s
-            s <- send 42 s
-            (x, s) <- recv s
-            close s
-            return x
-        )
-      return $ move (x == -42)
-
-    -- Server offers calculator, client chooses 4 + 5.
-    add = do
-      x <- connect calcServer
-        (\s -> do
-            s <- selectRight s
-            s <- send 4 s
-            s <- send 5 s
-            (x, s) <- recv s
-            close s
-            return x
-        )
-      return $ move (x == 9)
-
-
--- * Cancellation
-
-
--- |Test the interaction of cancel with send and receive.
-cancelWorks :: Test
-cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar cancelRecv)
-  , TestLabel "send" $ TestCase (assert cancelSend)
-  ]
-  where
-    -- Server cancels, client tries to receive.
-    cancelRecv = do
-      connect cancel
-        (\s -> do
-            ((), s) <- recv s
-            close s
-        )
-      return $ Ur ()
-
-    -- Server cancels, client tries to send.
-    cancelSend = do
-      connect cancel
-        (\s -> do
-            s <- send () s
-            close s
-        )
-      return $ Ur ()
