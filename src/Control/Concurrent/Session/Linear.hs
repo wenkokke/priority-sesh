@@ -76,10 +76,10 @@ type (p :: Priority) <= (q :: Priority) = (p <=? q) ~ 'True
 -- * The |Sesh| monad
 
 newtype Sesh
-  (t :: Type)     -- ^ Session token.
+  t     -- ^ Session token.
   (l :: Priority) -- ^ Lower priority bound.
   (u :: Priority) -- ^ Upper priority bound.
-  (a :: Type)     -- ^ Underlying type.
+  a     -- ^ Underlying type.
   = Sesh (Linear.IO a)
 
 unSesh :: Sesh t l u a %1 -> Linear.IO a
@@ -106,13 +106,13 @@ runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 
 -- * Session types and channels
 
-data Send (t :: Type) (o :: Nat) (a :: Type) (s :: Type) where
+data Send t (o :: Nat) a s where
   Send :: Session s => Raw.Send a (Raw s) %1 -> Send t o a s
 
-data Recv (t :: Type) (o :: Nat) (a :: Type) (s :: Type) where
+data Recv t (o :: Nat) a s where
   Recv :: Session s => Raw.Recv a (Raw s) %1 -> Recv t o a s
 
-data End  (t :: Type) (o :: Nat) where
+data End  t (o :: Nat) where
   End :: Raw.End %1 -> End t o
 
 class ( Session (Dual s)
@@ -120,33 +120,34 @@ class ( Session (Dual s)
       , Raw.Session (Raw s)
       , Raw (Dual s) ~ Raw.Dual (Raw s)
       ) => Session s where
-  type Dual (s :: Type) = (result :: Type) | result -> s
-  type Pr   (s :: Type) :: Nat
-  type Raw  (s :: Type) :: Type
+
+  type Dual s = result | result -> s
+  type Raw  s
+  type Pr   s :: Nat
 
   toRaw   :: s %1 -> Raw s
   fromRaw :: Raw s %1 -> s
 
 instance Session s => Session (Send t o a s) where
   type Dual (Send t o a s) = Recv t o a (Dual s)
-  type Pr   (Send t o a s) = o
   type Raw  (Send t o a s) = Raw.Send a (Raw s)
+  type Pr   (Send t o a s) = o
 
   toRaw (Send s) = s
   fromRaw s = Send s
 
 instance Session s => Session (Recv t o a s) where
   type Dual (Recv t o a s) = Send t o a (Dual s)
-  type Pr   (Recv t o a s) = o
   type Raw  (Recv t o a s) = Raw.Recv a (Raw s)
+  type Pr   (Recv t o a s) = o
 
   toRaw (Recv s) = s
   fromRaw s = Recv s
 
 instance Session (End t o) where
   type Dual (End t o) = End t o
-  type Pr   (End t o) = o
   type Raw  (End t o) = Raw.End
+  type Pr   (End t o) = o
 
   toRaw (End s) = s
   fromRaw s = End s

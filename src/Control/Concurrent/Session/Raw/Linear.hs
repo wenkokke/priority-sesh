@@ -48,22 +48,26 @@ instance Consumable End where
 
 class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
   type Dual s = result | result -> s
+
   new :: Linear.IO (s, Dual s)
 
 instance Session s => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
+
   new = do
     (sender, receiver) <- OneShot.new
     return (Send sender, Recv receiver)
 
 instance Session s => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
+
   new = do
     (sender, receiver) <- OneShot.new
     return (Recv receiver, Send sender)
 
 instance Session End where
   type Dual End = End
+
   new = do
     (sender1, receiver1) <- OneShot.new
     (sender2, receiver2) <- OneShot.new
