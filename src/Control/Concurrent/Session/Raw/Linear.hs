@@ -1,11 +1,11 @@
 {-# LANGUAGE GADTs                   #-}
-{-# LANGUAGE TypeFamilies            #-}
-{-# LANGUAGE TypeFamilyDependencies  #-}
 {-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE LinearTypes             #-}
 {-# LANGUAGE NoImplicitPrelude       #-}
 {-# LANGUAGE RankNTypes              #-}
 {-# LANGUAGE RebindableSyntax        #-}
-{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE TypeFamilyDependencies  #-}
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
@@ -26,19 +26,13 @@ import qualified Unsafe.Linear as Unsafe
 -- * Session types
 
 data Send a s where
-  Send :: Session s =>
-          OneShot.Sender (a, Dual s) %1 ->
-          Send a s
+  Send :: Session s => OneShot.Sender (a, Dual s) %1 -> Send a s
 
 data Recv a s where
-  Recv :: Session s =>
-          OneShot.Receiver (a, s) %1 ->
-          Recv a s
+  Recv :: Session s => OneShot.Receiver (a, s) %1 -> Recv a s
 
 data End where
-  End :: OneShot.Sender () %1 ->
-         OneShot.Receiver () %1 ->
-         End
+  End :: OneShot.Sender () %1 -> OneShot.Receiver () %1 -> End
 
 
 -- * Duality and session initiation

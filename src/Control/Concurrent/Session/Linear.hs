@@ -1,19 +1,16 @@
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE FlexibleContexts        #-}
-{-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE GADTs                   #-}
-{-# LANGUAGE KindSignatures          #-}
-{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE LinearTypes             #-}
 {-# LANGUAGE NoImplicitPrelude       #-}
 {-# LANGUAGE RankNTypes              #-}
-{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE RebindableSyntax        #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE TypeFamilyDependencies  #-}
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-
 
 module Control.Concurrent.Session.Linear
   -- Priorities
@@ -27,7 +24,6 @@ module Control.Concurrent.Session.Linear
   , (>>>=)
   , ireturn
   -- Session types and channels
-  , Chan
   , Session (Dual, Pr)
   , Send
   , Recv
@@ -40,8 +36,8 @@ module Control.Concurrent.Session.Linear
   , close
   , cancel
   -- Binary choice
-  , ChanSelect
-  , ChanOffer
+  , Select
+  , Offer
   , selectLeft
   , selectRight
   , offerEither
@@ -110,9 +106,14 @@ runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 
 -- * Session types and channels
 
-data Send (o :: Nat) (a :: Type) (s :: Type)
-data Recv (o :: Nat) (a :: Type) (s :: Type)
-data End  (o :: Nat)
+data Send (t :: Type) (o :: Nat) (a :: Type) (s :: Type) where
+  Send :: Session s => Raw.Send a (Raw s) %1 -> Send t o a s
+
+data Recv (t :: Type) (o :: Nat) (a :: Type) (s :: Type) where
+  Recv :: Session s => Raw.Recv a (Raw s) %1 -> Recv t o a s
+
+data End  (t :: Type) (o :: Nat) where
+  End :: Raw.End %1 -> End t o
 
 class ( Session (Dual s)
       , Dual (Dual s) ~ s
@@ -123,82 +124,100 @@ class ( Session (Dual s)
   type Pr   (s :: Type) :: Nat
   type Raw  (s :: Type) :: Type
 
-instance Session s => Session (Send o a s) where
-  type Dual (Send o a s) = Recv o a (Dual s)
-  type Pr   (Send o a s) = o
-  type Raw  (Send o a s) = Raw.Send a (Raw s)
+  toRaw   :: s %1 -> Raw s
+  fromRaw :: Raw s %1 -> s
 
-instance Session s => Session (Recv o a s) where
-  type Dual (Recv o a s) = Send o a (Dual s)
-  type Pr   (Recv o a s) = o
-  type Raw  (Recv o a s) = Raw.Recv a (Raw s)
+instance Session s => Session (Send t o a s) where
+  type Dual (Send t o a s) = Recv t o a (Dual s)
+  type Pr   (Send t o a s) = o
+  type Raw  (Send t o a s) = Raw.Send a (Raw s)
 
-instance Session (End o) where
-  type Dual (End o) = End o
-  type Pr   (End o) = o
-  type Raw  (End o) = Raw.End
+  toRaw (Send s) = s
+  fromRaw s = Send s
 
-data Chan t s = (Session s) => Chan (Raw s)
+instance Session s => Session (Recv t o a s) where
+  type Dual (Recv t o a s) = Send t o a (Dual s)
+  type Pr   (Recv t o a s) = o
+  type Raw  (Recv t o a s) = Raw.Recv a (Raw s)
+
+  toRaw (Recv s) = s
+  fromRaw s = Recv s
+
+instance Session (End t o) where
+  type Dual (End t o) = End t o
+  type Pr   (End t o) = o
+  type Raw  (End t o) = Raw.End
+
+  toRaw (End s) = s
+  fromRaw s = End s
 
 
 -- * Communication primitives
 
-new :: Session s => Sesh t 'Top 'Bot (Chan t s, Chan t (Dual s))
-new = Sesh $ Raw.new >>= \(here, there) -> return (Chan here, Chan there)
+new :: Session s => Sesh t 'Top 'Bot (s, Dual s)
+new = Sesh $ do
+  (here, there) <- Raw.new
+  return (fromRaw here, fromRaw there)
 
-withNew :: Session s => ((Chan t s, Chan t (Dual s)) %1 -> Sesh t 'Top q a) %1 -> Sesh t 'Top q a
-withNew mf = ibind mf new
+withNew :: Session s => ((s, Dual s) %1 -> Sesh t 'Top q a) %1 -> Sesh t 'Top q a
+withNew mf =
+  ibind mf new
 
 spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
-spawn mx = Sesh $ Raw.spawn (unSesh mx)
+spawn mx = Sesh $
+  Raw.spawn (unSesh mx)
 
-send :: Session s => (a, Chan t (Send o a s)) %1 -> Sesh t 'Top ('Val o) (Chan t s)
-send (x, Chan ch) = Sesh $ Raw.send (x, ch) >>= \ch -> return (Chan ch)
+send :: Session s => (a, Send t o a s) %1 -> Sesh t 'Top ('Val o) (s)
+send (x, s) = Sesh $ do
+  s <- Raw.send (x, toRaw s)
+  return (fromRaw s)
 
-recv :: Session s => Chan t (Recv o a s) %1 -> Sesh t 'Top ('Val o) (a, Chan t s)
-recv (Chan ch) = Sesh $ Raw.recv ch >>= \(x, ch) -> return (x, Chan ch)
+recv :: Session s => Recv t o a s %1 -> Sesh t 'Top ('Val o) (a, s)
+recv s = Sesh $ do
+  (x, s) <- Raw.recv (toRaw s)
+  return (x, fromRaw s)
 
-close :: Chan t (End o) %1 -> Sesh t 'Top ('Val o) ()
-close (Chan ch) = Sesh $ Raw.close ch
+close :: End t o %1 -> Sesh t 'Top ('Val o) ()
+close s = Sesh $
+  Raw.close (toRaw s)
 
-cancel :: Session s => Chan t s %1 -> Sesh t 'Top 'Bot ()
-cancel (Chan ch) = Sesh $ Raw.cancel ch
+cancel :: Session s => s %1 -> Sesh t 'Top 'Bot ()
+cancel s = Sesh $
+  Raw.cancel (toRaw s)
 
 
 -- * Binary choice
 
-type ChanSelect t o s1 s2
-  = Chan t (Send o (Either (Chan t (Dual s1)) (Chan t (Dual s2))) (End (o + 1)))
+type Select t o s1 s2 = Send t o (Either (Dual s1) (Dual s2)) (End t (o + 1))
 
-type ChanOffer t o s1 s2
-  = Chan t (Recv o (Either (Chan t s1) (Chan t s2)) (End (o + 1)))
+type Offer t o s1 s2 = Recv t o (Either s1 s2) (End t (o + 1))
 
 selectLeft :: (Session s1, Session s2, Pr s1 ~ Pr s2) =>
-              ChanSelect t o s1 s2 %1 ->
-              Sesh t 'Top ('Val o) (Chan t s1)
-selectLeft (ch :: ChanSelect t o s1 s2) =
+              Select t o s1 s2 %1 ->
+              Sesh t 'Top ('Val o) s1
+selectLeft s =
   new >>>= \(here, there) ->
-  send (Left there, ch) >>>= \ch ->
-  cancel ch >>>= \() ->
+  send (Left there, s) >>>= \s ->
+  cancel s >>>= \() ->
   ireturn here
 
 selectRight :: (Session s1, Session s2, Pr s1 ~ Pr s2) =>
-               ChanSelect t o s1 s2 %1 ->
-               Sesh t 'Top ('Val o) (Chan t s2)
-selectRight ch =
+               Select t o s1 s2 %1 ->
+               Sesh t 'Top ('Val o) s2
+selectRight s =
   new >>>= \(here, there) ->
-  send (Right there, ch) >>>= \ch ->
-  cancel ch >>>= \() ->
+  send (Right there, s) >>>= \s ->
+  cancel s >>>= \() ->
   ireturn here
 
 offerEither :: (Session s1, Session s2, 'Val o <= p) =>
-               (Either (Chan t s1) (Chan t s2) %1 -> Sesh t p q a) %1 ->
-               ChanOffer t o s1 s2 ->
+               (Either s1 s2 %1 -> Sesh t p q a) %1 ->
+               Offer t o s1 s2 ->
                Sesh t 'Top q a
-offerEither match ch =
-  recv ch >>>= \(x, ch) ->
-  cancel ch >>>= \() ->
-  match x
+offerEither mats s =
+  recv s >>>= \(x, s) ->
+  cancel s >>>= \() ->
+  mats x
 
 -- -}
 -- -}
