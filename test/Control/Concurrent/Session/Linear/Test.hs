@@ -25,13 +25,13 @@ import qualified Unsafe.Linear as Unsafe
 fail :: String -> Sesh t p q a
 fail = error
 
-(>>) :: (Consumable a, q <= p') =>
+(>>) :: (Consumable a, q < p') =>
   Sesh t p q a %1 ->
   Sesh t p' q' b %1 ->
   Sesh t (Min p p') (Max q q') b
 mx >> my = mx Session.>>>= \x -> x `lseq` my
 
-(>>=) :: (q <= p') =>
+(>>=) :: (q < p') =>
   Sesh t p q a %1 ->
   (a %1 -> Sesh t p' q' b) %1 ->
   Sesh t (Min p p') (Max q q') b

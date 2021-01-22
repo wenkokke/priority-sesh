@@ -17,9 +17,12 @@ module Control.Concurrent.Session.Linear
   ( Priority (..)
   , type (<?)
   , type (<)
+  , Min
+  , Max
   , Pr
   -- The |Sesh| monad
   , Sesh
+  , runSesh
   , ibind
   , (=<<<)
   , (>>>=)
@@ -29,19 +32,19 @@ module Control.Concurrent.Session.Linear
   , Send
   , Recv
   , End
-  -- -- Communication primitives
-  -- , withNew
-  -- , spawn
-  -- , send
-  -- , recv
-  -- , close
-  -- , cancel
-  -- -- Binary choice
-  -- , Select
-  -- , Offer
-  -- , selectLeft
-  -- , selectRight
-  -- , offerEither
+  -- Communication primitives
+  , withNew
+  , spawn
+  , send
+  , recv
+  , close
+  , cancel
+  -- Binary choice
+  , Select
+  , Offer
+  , selectLeft
+  , selectRight
+  , offerEither
   ) where
 
 import           Prelude.Linear hiding (Max, Min, Dual, IO)
