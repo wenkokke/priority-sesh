@@ -24,14 +24,13 @@ library
     Control.Concurrent.OneShot.Linear
     Control.Concurrent.Session.Linear
     Control.Concurrent.Session.Raw.Linear
-    Data.Functor.Indexed.Linear
-    Control.Monad.Indexed.Linear
+  other-modules:
+    GHC.TypeLits.Extra
   hs-source-dirs:
     src
   build-depends:
-    base        >=4.7  && <5,
-    linear-base >=0.1  && <0.2,
-    indexed     >=0.1  && <0.2
+    base        >=4.7 && <5,
+    linear-base >=0.1 && <0.2
   default-language:
     Haskell2010
   default-extensions:
@@ -44,6 +43,7 @@ test-suite test-linear-sesh
     Test.hs
   other-modules:
     Test.HUnit.Linear
+    Control.Concurrent.Session.Linear.Test
     Control.Concurrent.Session.Raw.Linear.Test
   hs-source-dirs:      
     test

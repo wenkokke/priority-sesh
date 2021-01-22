@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE LinearTypes         #-}
+{-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RebindableSyntax #-}
 
 module Control.Concurrent.Session.Raw.Linear.Test where
 
@@ -14,6 +15,9 @@ import qualified System.IO.Linear as Linear
 import qualified Unsafe.Linear as Unsafe
 
 -- * Ping
+
+type Ping = Send () End
+type Pong = Dual Ping
 
 -- |Test sending a ping across threads.
 pingWorks :: Test

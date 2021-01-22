@@ -15,8 +15,9 @@
 module Control.Concurrent.Session.Linear
   -- Priorities
   ( Priority (..)
-  , type (<=?)
-  , type (<=)
+  , type (<?)
+  , type (<)
+  , Pr
   -- The |Sesh| monad
   , Sesh
   , ibind
@@ -24,31 +25,33 @@ module Control.Concurrent.Session.Linear
   , (>>>=)
   , ireturn
   -- Session types and channels
-  , Session (Dual, Pr)
+  , Session (Dual)
   , Send
   , Recv
   , End
-  -- Communication primitives
-  , withNew
-  , spawn
-  , send
-  , recv
-  , close
-  , cancel
-  -- Binary choice
-  , Select
-  , Offer
-  , selectLeft
-  , selectRight
-  , offerEither
+  -- -- Communication primitives
+  -- , withNew
+  -- , spawn
+  -- , send
+  -- , recv
+  -- , close
+  -- , cancel
+  -- -- Binary choice
+  -- , Select
+  -- , Offer
+  -- , selectLeft
+  -- , selectRight
+  -- , offerEither
   ) where
 
-import           Prelude.Linear hiding (Dual, IO)
+import           Prelude.Linear hiding (Max, Min, Dual, IO)
 import qualified Control.Concurrent.Session.Raw.Linear as Raw
 import           Control.Monad.Linear
 import           Data.Kind (Type)
-import           GHC.TypeLits (Nat, type (+))
+import           Data.Type.Equality (type (==))
+import           GHC.TypeLits (Nat, CmpNat, type (+))
 import qualified GHC.TypeLits as Nat
+import qualified GHC.TypeLits.Extra as Nat
 import qualified System.IO.Linear as Linear
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Unsafe.Linear as Unsafe
@@ -61,50 +64,37 @@ data Priority
   | Val Nat
   | Top
 
-type family (p :: Priority) <=? (q :: Priority) :: Bool where
-  'Bot   <=? p      = 'True
-  'Val n <=? 'Bot   = 'False
-  'Val n <=? 'Val m = n Nat.<=? m
-  'Val n <=? 'Top   = 'True
-  'Top   <=? 'Bot   = 'False
-  'Top   <=? 'Val m = 'False
-  'Top   <=? 'Top   = 'True
+type family (p :: Priority) <? (q :: Priority) :: Bool where
+  'Bot     <? 'Bot     = 'False
+  'Bot     <? q        = 'True
+  ('Val n) <? ('Val m) = CmpNat n m == 'LT
+  'Top     <? 'Top     = 'False
+  p        <? 'Top     = 'True
 
-type (p :: Priority) <= (q :: Priority) = (p <=? q) ~ 'True
+type (p :: Priority) < (q :: Priority) = (p <? q) ~ 'True
 
+type family Min (p :: Priority) (q :: Priority) :: Priority where
+  Min p        'Bot     = 'Bot
+  Min 'Bot     q        = 'Bot
+  Min ('Val n) ('Val m) = 'Val (Nat.Min n m)
+  Min p        'Top     = p
+  Min 'Top     q        = q
 
--- * The |Sesh| monad
+type family Max (p :: Priority) (q :: Priority) :: Priority where
+  Max p        'Bot     = p
+  Max 'Bot     q        = q
+  Max ('Val n) ('Val m) = 'Val (Nat.Max n m)
+  Max p        'Top     = 'Top
+  Max 'Top     q        = 'Bot
 
-newtype Sesh
-  t     -- ^ Session token.
-  (l :: Priority) -- ^ Lower priority bound.
-  (u :: Priority) -- ^ Upper priority bound.
-  a     -- ^ Underlying type.
-  = Sesh (Linear.IO a)
-
-unSesh :: Sesh t l u a %1 -> Linear.IO a
-unSesh (Sesh x) = x
-
-ibind :: (q <= p') => (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q a %1 -> Sesh t p q' b
-ibind mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
-
-infixr 1 =<<<
-infixl 1 >>>=
-
-(=<<<) :: (q <= p') => (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q a %1 -> Sesh t p q' b
-(=<<<) mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
-
-(>>>=) :: (q <= p') => Sesh t p q a %1 -> (a %1 -> Sesh t p' q' b) %1 -> Sesh t p q' b
-(>>>=) = flip ibind
-
-ireturn :: a %1 -> Sesh t p p a
-ireturn x = Sesh $ return x
-
-runSesh :: (forall t. Sesh t p q a) -> Linear.IO a
-runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
+type family Pr (a :: Type) :: Priority where
+  Pr (Send t o a s) = 'Val o
+  Pr (Recv t o a s) = 'Val o
+  Pr (End  t o)     = 'Val o
+  Pr a              = 'Top
 
 
--- * Session types and channels
+-- * Session types
 
 data Send t (o :: Nat) a s where
   Send :: Session s => Raw.Send a (Raw s) %1 -> Send t o a s
@@ -115,15 +105,17 @@ data Recv t (o :: Nat) a s where
 data End  t (o :: Nat) where
   End :: Raw.End %1 -> End t o
 
-class ( Session (Dual s)
-      , Dual (Dual s) ~ s
-      , Raw.Session (Raw s)
-      , Raw (Dual s) ~ Raw.Dual (Raw s)
+
+-- * Duality and conversion to Raw representation
+
+class ( Session (Dual s)                 -- The dual of a session is also a session.
+      , Dual (Dual s) ~ s                -- Duality is involutive.
+      , Raw.Session (Raw s)              -- The Raw representation is also a session.
+      , Raw (Dual s) ~ Raw.Dual (Raw s)  -- Duality and Raw commute.
       ) => Session s where
 
   type Dual s = result | result -> s
   type Raw  s
-  type Pr   s :: Nat
 
   toRaw   :: s %1 -> Raw s
   fromRaw :: Raw s %1 -> s
@@ -131,7 +123,6 @@ class ( Session (Dual s)
 instance Session s => Session (Send t o a s) where
   type Dual (Send t o a s) = Recv t o a (Dual s)
   type Raw  (Send t o a s) = Raw.Send a (Raw s)
-  type Pr   (Send t o a s) = o
 
   toRaw (Send s) = s
   fromRaw s = Send s
@@ -139,7 +130,6 @@ instance Session s => Session (Send t o a s) where
 instance Session s => Session (Recv t o a s) where
   type Dual (Recv t o a s) = Send t o a (Dual s)
   type Raw  (Recv t o a s) = Raw.Recv a (Raw s)
-  type Pr   (Recv t o a s) = o
 
   toRaw (Recv s) = s
   fromRaw s = Recv s
@@ -147,10 +137,53 @@ instance Session s => Session (Recv t o a s) where
 instance Session (End t o) where
   type Dual (End t o) = End t o
   type Raw  (End t o) = Raw.End
-  type Pr   (End t o) = o
 
   toRaw (End s) = s
   fromRaw s = End s
+
+
+-- * The |Sesh| communication monad
+
+newtype Sesh
+  (t :: Type)     -- ^ Session token.
+  (l :: Priority) -- ^ Lower priority bound.
+  (u :: Priority) -- ^ Upper priority bound.
+  (a :: Type)     -- ^ Underlying type.
+  = Sesh (Linear.IO a)
+
+-- |Unpack the |Sesh| monad.
+--
+--  NOTE: This operation is /unsafe/ and should not be exported.
+--
+unSesh :: Sesh t l u a %1 -> Linear.IO a
+unSesh (Sesh x) = x
+
+ibind :: (q < p') =>
+  (a %1 -> Sesh t p' q' b) %1 ->
+  Sesh t p q a %1 ->
+  Sesh t (Min p p') (Max q q') b
+ibind mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
+
+infixr 1 =<<<
+infixl 1 >>>=
+
+(=<<<) :: (q < p') =>
+  (a %1 -> Sesh t p' q' b) %1 ->
+  Sesh t p q a %1 ->
+  Sesh t (Min p p') (Max q q') b
+(=<<<) = ibind
+
+(>>>=) :: (q < p') =>
+  Sesh t p q a %1 ->
+  (a %1 -> Sesh t p' q' b) %1 ->
+  Sesh t (Min p p') (Max q q') b
+(>>>=) = flip ibind
+
+ireturn :: a %1 -> Sesh t (Pr a) 'Bot a
+ireturn x = Sesh $ return x
+
+runSesh :: (forall t. Sesh t p q a) -> Linear.IO a
+runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 
 
 -- * Communication primitives
@@ -160,65 +193,63 @@ new = Sesh $ do
   (here, there) <- Raw.new
   return (fromRaw here, fromRaw there)
 
-withNew :: Session s => ((s, Dual s) %1 -> Sesh t 'Top q a) %1 -> Sesh t 'Top q a
-withNew mf =
-  ibind mf new
+withNew :: (Session s, 'Bot < p) => ((s, Dual s) %1 -> Sesh t p q a) %1 -> Sesh t p q a
+withNew mf = ibind mf new
 
 spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
-spawn mx = Sesh $
-  Raw.spawn (unSesh mx)
+spawn mx = Sesh $ Raw.spawn (unSesh mx)
 
-send :: Session s => (a, Send t o a s) %1 -> Sesh t 'Top ('Val o) (s)
+send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t 'Top ('Val o) (s)
 send (x, s) = Sesh $ do
   s <- Raw.send (x, toRaw s)
   return (fromRaw s)
 
-recv :: Session s => Recv t o a s %1 -> Sesh t 'Top ('Val o) (a, s)
+recv :: forall o s a t. Session s => Recv t o a s %1 -> Sesh t 'Top ('Val o) (a, s)
 recv s = Sesh $ do
   (x, s) <- Raw.recv (toRaw s)
   return (x, fromRaw s)
 
-close :: End t o %1 -> Sesh t 'Top ('Val o) ()
-close s = Sesh $
-  Raw.close (toRaw s)
+close :: forall o t. End t o %1 -> Sesh t 'Top ('Val o) ()
+close s = Sesh $ Raw.close (toRaw s)
 
-cancel :: Session s => s %1 -> Sesh t 'Top 'Bot ()
-cancel s = Sesh $
-  Raw.cancel (toRaw s)
+cancel :: forall s t. Session s => s %1 -> Sesh t 'Top 'Bot ()
+cancel s = Sesh $ Raw.cancel (toRaw s)
 
 
 -- * Binary choice
 
-type Select t o s1 s2 = Send t o (Either (Dual s1) (Dual s2)) (End t (o + 1))
+type Select t o s1 s2
+  = Send t o (Either (Dual s1) (Dual s2)) (End t (o + 1))
 
-type Offer t o s1 s2 = Recv t o (Either s1 s2) (End t (o + 1))
+type Offer t o s1 s2
+  = Recv t o (Either s1 s2) (End t (o + 1))
 
-selectLeft :: (Session s1, Session s2, Pr s1 ~ Pr s2) =>
-              Select t o s1 s2 %1 ->
-              Sesh t 'Top ('Val o) s1
+selectLeft :: (Session s1, Session s2, Pr s1 ~ Pr s2, 'Bot < Pr s1, 'Val o < Pr s1) =>
+  Select t o s1 s2 %1 ->
+  Sesh t (Pr s1) ('Val o) s1
 selectLeft s =
-  new >>>= \(here, there) ->
-  send (Left there, s) >>>= \s ->
-  cancel s >>>= \() ->
-  ireturn here
+  withNew (\(here, there) ->
+              send (Left there, s) >>>= \s ->
+              cancel s >>>= \() ->
+              ireturn here)
 
-selectRight :: (Session s1, Session s2, Pr s1 ~ Pr s2) =>
-               Select t o s1 s2 %1 ->
-               Sesh t 'Top ('Val o) s2
+selectRight :: (Session s1, Session s2, Pr s1 ~ Pr s2, 'Bot < Pr s2, 'Val o < Pr s2) =>
+  Select t o s1 s2 %1 ->
+  Sesh t (Pr s2) ('Val o) s2
 selectRight s =
-  new >>>= \(here, there) ->
-  send (Right there, s) >>>= \s ->
-  cancel s >>>= \() ->
-  ireturn here
+  withNew (\(here, there) ->
+              send (Right there, s) >>>= \s ->
+              cancel s >>>= \() ->
+              ireturn here)
 
-offerEither :: (Session s1, Session s2, 'Val o <= p) =>
-               (Either s1 s2 %1 -> Sesh t p q a) %1 ->
-               Offer t o s1 s2 ->
-               Sesh t 'Top q a
-offerEither mats s =
+offerEither :: (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
+  (Either s1 s2 %1 -> Sesh t p q a) %1 ->
+  Offer t o s1 s2 ->
+  Sesh t p (Max ('Val o) q) a
+offerEither match s =
   recv s >>>= \(x, s) ->
   cancel s >>>= \() ->
-  mats x
+  match x
 
 -- -}
 -- -}

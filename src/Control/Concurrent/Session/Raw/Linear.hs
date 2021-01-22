@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs                   #-}
 {-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE InstanceSigs            #-}
 {-# LANGUAGE LinearTypes             #-}
 {-# LANGUAGE NoImplicitPrelude       #-}
 {-# LANGUAGE RankNTypes              #-}
@@ -54,6 +55,7 @@ class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
 instance Session s => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
 
+  new :: Linear.IO (Send a s, Recv a (Dual s))
   new = do
     (sender, receiver) <- OneShot.new
     return (Send sender, Recv receiver)
@@ -61,6 +63,7 @@ instance Session s => Session (Send a s) where
 instance Session s => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
 
+  new :: Linear.IO (Recv a s, Send a (Dual s))
   new = do
     (sender, receiver) <- OneShot.new
     return (Recv receiver, Send sender)
@@ -68,6 +71,7 @@ instance Session s => Session (Recv a s) where
 instance Session End where
   type Dual End = End
 
+  new :: Linear.IO (End, End)
   new = do
     (sender1, receiver1) <- OneShot.new
     (sender2, receiver2) <- OneShot.new
@@ -105,32 +109,41 @@ close (End sender receiver) = do
 cancel :: Session s => s %1 -> Linear.IO ()
 cancel s = return $ consume s
 
--- |Suppress BlockedIndefinitelyOnMVar exceptions.
+-- |Suppress |BlockedIndefinitelyOnMVar| exceptions.
 quiet :: Linear.IO (Ur ()) %1 -> Linear.IO (Ur ())
 quiet x = Unsafe.toLinear2 Linear.catch x (\BlockedIndefinitelyOnMVar -> return $ Ur ())
 
 
 -- * Binary choice
 
-type Select s1 s2 = Send (Either (Dual s1) (Dual s2)) End
+type Select s1 s2 =
+  Send (Either (Dual s1) (Dual s2)) End
 
-type Offer s1 s2 = Recv (Either s1 s2) End
+type Offer s1 s2 =
+  Recv (Either s1 s2) End
 
-selectLeft :: (Session s1, Session s2) => Select s1 s2 %1 -> Linear.IO s1
+selectLeft :: (Session s1, Session s2) =>
+  Select s1 s2 %1 ->
+  Linear.IO s1
 selectLeft s = do
   (here, there) <- new
   s <- send (Left there, s)
   cancel s
   return here
 
-selectRight :: (Session s1, Session s2) => Select s1 s2 %1 -> Linear.IO s2
+selectRight :: (Session s1, Session s2) =>
+  Select s1 s2 %1 ->
+  Linear.IO s2
 selectRight s = do
   (here, there) <- new
   s <- send (Right there, s)
   cancel s
   return here
 
-offerEither :: (Session s1, Session s2) => (Either s1 s2 %1 -> Linear.IO a) -> Offer s1 s2 %1 -> Linear.IO a
+offerEither :: (Session s1, Session s2) =>
+  (Either s1 s2 %1 -> Linear.IO a) %1 ->
+  Offer s1 s2 %1 ->
+  Linear.IO a
 offerEither match s = do
   (e, s) <- recv s
   cancel s
