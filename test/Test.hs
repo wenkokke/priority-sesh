@@ -14,6 +14,8 @@ main = runTestTT tests
       , Raw.calcWorks
       , Raw.cancelWorks
       , Session.pingWorks
+      , Session.calcWorks
+      , Session.cancelWorks
       ]
 
 

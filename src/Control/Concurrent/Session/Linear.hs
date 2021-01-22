@@ -23,6 +23,7 @@ module Control.Concurrent.Session.Linear
   -- The |Sesh| monad
   , Sesh
   , runSesh
+  , runSeshIO
   , ibind
   , (=<<<)
   , (>>>=)
@@ -47,7 +48,7 @@ module Control.Concurrent.Session.Linear
   , offerEither
   ) where
 
-import           Prelude.Linear hiding (Max, Min, Dual, IO)
+import           Prelude.Linear hiding (Max, Min, Dual)
 import qualified Control.Concurrent.Session.Raw.Linear as Raw
 import           Control.Monad.Linear
 import           Data.Kind (Type)
@@ -185,8 +186,11 @@ infixl 1 >>>=
 ireturn :: a %1 -> Sesh t (Pr a) 'Bot a
 ireturn x = Sesh $ return x
 
-runSesh :: (forall t. Sesh t p q a) -> Linear.IO a
+runSesh :: (forall t. Sesh t p q a) -> a
 runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
+
+runSeshIO :: (forall t. Sesh t p q a) -> Linear.IO a
+runSeshIO mx = unSesh mx
 
 
 -- * Communication primitives
@@ -202,17 +206,17 @@ withNew mf = ibind mf new
 spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
 spawn mx = Sesh $ Raw.spawn (unSesh mx)
 
-send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t 'Top ('Val o) (s)
+send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) (s)
 send (x, s) = Sesh $ do
   s <- Raw.send (x, toRaw s)
   return (fromRaw s)
 
-recv :: forall o s a t. Session s => Recv t o a s %1 -> Sesh t 'Top ('Val o) (a, s)
+recv :: forall o s a t. Session s => Recv t o a s %1 -> Sesh t ('Val o) ('Val o) (a, s)
 recv s = Sesh $ do
   (x, s) <- Raw.recv (toRaw s)
   return (x, fromRaw s)
 
-close :: forall o t. End t o %1 -> Sesh t 'Top ('Val o) ()
+close :: forall o t. End t o %1 -> Sesh t ('Val o) ('Val o) ()
 close s = Sesh $ Raw.close (toRaw s)
 
 cancel :: forall s t. Session s => s %1 -> Sesh t 'Top 'Bot ()
@@ -227,18 +231,28 @@ type Select t o s1 s2
 type Offer t o s1 s2
   = Recv t o (Either s1 s2) (End t (o + 1))
 
-selectLeft :: (Session s1, Session s2, Pr s1 ~ Pr s2, 'Bot < Pr s1, 'Val o < Pr s1) =>
+selectLeft :: ( Session s1
+              , Session s2
+              , Pr s1 ~ Pr s2
+              , 'Bot < Pr s1
+              , 'Bot < Min ('Val o) (Pr s1)
+              , 'Val o < Pr s1) =>
   Select t o s1 s2 %1 ->
-  Sesh t (Pr s1) ('Val o) s1
+  Sesh t (Min ('Val o) (Pr s1)) ('Val o) s1
 selectLeft s =
   withNew (\(here, there) ->
               send (Left there, s) >>>= \s ->
               cancel s >>>= \() ->
               ireturn here)
 
-selectRight :: (Session s1, Session s2, Pr s1 ~ Pr s2, 'Bot < Pr s2, 'Val o < Pr s2) =>
+selectRight :: ( Session s1
+               , Session s2
+               , Pr s1 ~ Pr s2
+               , 'Bot < Pr s2
+               , 'Bot < Min ('Val o) (Pr s2)
+               , 'Val o < Pr s2) =>
   Select t o s1 s2 %1 ->
-  Sesh t (Pr s2) ('Val o) s2
+  Sesh t (Min ('Val o) (Pr s2)) ('Val o) s2
 selectRight s =
   withNew (\(here, there) ->
               send (Right there, s) >>>= \s ->
@@ -247,8 +261,8 @@ selectRight s =
 
 offerEither :: (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
   (Either s1 s2 %1 -> Sesh t p q a) %1 ->
-  Offer t o s1 s2 ->
-  Sesh t p (Max ('Val o) q) a
+  Offer t o s1 s2 %1 ->
+  Sesh t (Min ('Val o) p) (Max ('Val o) q) a
 offerEither match s =
   recv s >>>= \(x, s) ->
   cancel s >>>= \() ->
