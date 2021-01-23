@@ -91,6 +91,11 @@ type family Max (p :: Priority) (q :: Priority) :: Priority where
   Max p        'Top     = 'Top
   Max 'Top     q        = 'Bot
 
+--
+-- TODO: this should probably be an OPEN type family with instances for all
+--       basic types so that we can detect session types under, e.g., pairs,
+--       sums, custom types, etc.
+--
 type family Pr (a :: Type) :: Priority where
   Pr (Send t o a s) = 'Val o
   Pr (Recv t o a s) = 'Val o
@@ -157,11 +162,15 @@ newtype Sesh
 
 -- |Unpack the |Sesh| monad.
 --
---  NOTE: This operation is /unsafe/ and should not be exported.
+-- NOTE: This operation is /unsafe/ and should not be exported.
 --
 unSesh :: Sesh t l u a %1 -> Linear.IO a
 unSesh (Sesh x) = x
 
+--
+-- TODO: this should probably be modified to include (Pr a) as part of the lower
+--       bound, in conjunction with the changes to Pr mentioned above
+--
 ibind :: (q < p') =>
   (a %1 -> Sesh t p' q' b) %1 ->
   Sesh t p q a %1 ->
@@ -195,6 +204,10 @@ runSeshIO mx = unSesh mx
 
 -- * Communication primitives
 
+-- |Create a new channel with two dual endpoints.
+--
+-- NOTE: This operation is /unsafe/ and should not be exported.
+--
 new :: Session s => Sesh t 'Top 'Bot (s, Dual s)
 new = Sesh $ do
   (here, there) <- Raw.new
