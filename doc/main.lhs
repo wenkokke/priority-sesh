@@ -1,9 +1,8 @@
 \documentclass[sigplan,screen]{acmart}
-
-%%% lhs2TeX directives:
-\let\Bbbk\undefined
+\let\Bbbk\undefined % acmart conflicts with lhs2TeX
 %include polycode.fmt
-
+\input{preamble}
+\input{preamble/pgv}
 \begin{document}
 
 \title{Session Types with Priority in Linear Haskell}
@@ -44,8 +43,10 @@
 \section{Overview}
 \begin{itemize}
 \item an example using \texttt{priority-sesh}
-\item introduction to \texttt{priority-sesh}
-\item correspondence to PGV (via a monadic reification)
+\item introduce session types
+\item introduce Linear Haskell
+\item introduce \texttt{priority-sesh}
+\item relate to PGV via a monadic reflection
 \end{itemize}
 
 \end{document}
