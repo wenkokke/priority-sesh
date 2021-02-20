@@ -1,0 +1,58 @@
+cabal-version: 1.12
+
+name:           linear-sesh
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/wenkokke/linear-sesh#readme>
+homepage:       https://github.com/wenkokke/linear-sesh#readme
+bug-reports:    https://github.com/wenkokke/linear-sesh/issues
+author:         Wen Kokke
+maintainer:     wenkokke@users.noreply.github.com
+copyright:      © Wen Kokke
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+  README.md
+
+source-repository head
+  type: git
+  location: https://github.com/wenkokke/linear-sesh
+
+library
+  exposed-modules:
+    Control.Concurrent.Linear
+    Control.Concurrent.MVar.Linear
+    Control.Concurrent.OneShot.Linear
+    Control.Concurrent.Session.Linear
+    Control.Concurrent.Session.Raw.Linear
+  other-modules:
+    GHC.TypeLits.Extra
+  hs-source-dirs:
+    src
+  build-depends:
+    base        >=4.7 && <5,
+    linear-base >=0.1 && <0.2
+  default-language:
+    Haskell2010
+  default-extensions:
+    LinearTypes
+
+test-suite test-linear-sesh
+  type:
+    exitcode-stdio-1.0
+  main-is:
+    Test.hs
+  other-modules:
+    Test.HUnit.Linear
+    Control.Concurrent.Session.Linear.Test
+    Control.Concurrent.Session.Raw.Linear.Test
+  hs-source-dirs:      
+    test
+  build-depends:
+    base        >=4.7 && <5,
+    HUnit       >=1.6 && <2,
+    linear-base >=0.1 && <0.2,
+    linear-sesh
+  default-language:
+    Haskell2010
+  default-extensions:
+    LinearTypes
