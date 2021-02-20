@@ -1,3 +1,8 @@
+# Custom
+
+*.pdf
+doc/main.tex
+
 # Haskell
 
 stack.yaml.lock

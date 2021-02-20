@@ -7,6 +7,7 @@ packages:
 - '.'
 
 extra-deps:
+
+# Linear Haskell
 - git: https://github.com/tweag/linear-base.git
   commit: 121d3f1d100a715ac280c1e3efc5cf7a014a978e
-
