@@ -3,6 +3,7 @@
 %include polycode.fmt
 \input{preamble}
 \input{preamble/pgv}
+\input{preamble/sesh}
 \begin{document}
 
 \title{Session Types with Priority in Linear Haskell}
@@ -15,7 +16,14 @@
 \email{wen.kokke@@ed.ac.uk}
 
 \begin{abstract}
-  To be written last\dots
+  The paper should be structured as follows\dots
+  \begin{itemize}
+  \item an example using \texttt{priority-sesh}
+  \item introduce session types
+  \item introduce Linear Haskell
+  \item introduce \texttt{priority-sesh}
+  \item relate to PGV via a monadic reflection
+  \end{itemize}
 \end{abstract}
 
 \begin{CCSXML}
@@ -40,13 +48,11 @@
 
 \maketitle
 
-\section{Overview}
-\begin{itemize}
-\item an example using \texttt{priority-sesh}
-\item introduce session types
-\item introduce Linear Haskell
-\item introduce \texttt{priority-sesh}
-\item relate to PGV via a monadic reflection
-\end{itemize}
+\section{Introduction}
+
+\section{What's this Sesh?}
+
+\section{Relation to Priority GV}
+%include pgv.lhs
 
 \end{document}
