@@ -8,6 +8,9 @@
 \usepackage{namespc} % namespacing
 \usepackage{xcolor} % colour
 
+% break math across pages
+\allowdisplaybreaks
+
 % headers (for declaring operators in figures)
 \newcommand{\header}[2][]{%
   \textbf{#2.}\hfill
@@ -15,3 +18,7 @@
   \else
   \framebox{#1}
   \fi}
+
+% translation (from pgv to sesh)
+\newcommand{\tosesh}[1]{%
+  \llbracket#1\rrbracket}

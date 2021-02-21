@@ -1,10 +1,9 @@
-\usingnamespace{sesh}
 %include polycode.fmt
+%include linear.fmt
 %include main.fmt
 
 \input{fig/pgv-typing}
-
-\input{fig/sesh-typing}
+\input{fig/pgv-to-sesh}
 
 \begin{code}
 return :: a %1 -> Sesh (Pr a) Bot a

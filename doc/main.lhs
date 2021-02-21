@@ -2,6 +2,7 @@
 
 \let\Bbbk\undefined % acmart conflicts with lhs2TeX
 %include polycode.fmt
+%include linear.fmt
 %include main.fmt
 
 \input{preamble}
