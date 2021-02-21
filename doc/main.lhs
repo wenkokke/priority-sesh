@@ -1,6 +1,9 @@
 \documentclass[sigplan,screen]{acmart}
+
 \let\Bbbk\undefined % acmart conflicts with lhs2TeX
 %include polycode.fmt
+%include main.fmt
+
 \input{preamble}
 \input{preamble/pgv}
 \input{preamble/sesh}
