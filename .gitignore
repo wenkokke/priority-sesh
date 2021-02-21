@@ -2,6 +2,7 @@
 
 *.pdf
 doc/main.tex
+doc/pgv.tex
 
 # Haskell
 
@@ -46,6 +47,7 @@ cabal.project.local~
 *.cb
 *.cb2
 .*.lb
+*.ptb
 
 ## Intermediate documents:
 *.dvi
