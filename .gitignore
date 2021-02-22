@@ -3,6 +3,8 @@
 *.pdf
 doc/main.tex
 doc/pgv.tex
+doc/fig-pgv-to-sesh.tex
+doc/fig-sesh-typing.tex
 
 # Haskell
 
