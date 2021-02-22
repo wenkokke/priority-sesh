@@ -1,0 +1,97 @@
+\begin{figure*}
+\begin{mdframed}
+\usingnamespace{pgv}
+\header[${\seq{p}{q}{\ty{\Gamma}}{M}{T}}$]{Static Typing Rules}
+\begin{mathpar}
+  \inferrule*[lab=T-Var]{
+  }{\seq{\pr(\ty{T})}{\bot}{\tmty{x}{T}}{x}{T}}
+  
+  \inferrule*[lab=T-Lam]{
+    \seq{{p}\sqcap{\pr(\ty{T})}}{q}{\ty{\Gamma},\tmty{x}{T}}{M}{U}
+  }{\seq{p}{{\bot}}{\ty{\Gamma}}{\lambda x.M}{\tylolli{p}{q}{T}{U}}}
+  
+  \inferrule*[lab=T-Const]{
+  }{\seq{{\top}}{{\bot}}{\emptyenv}{K}{T}}
+  
+  \inferrule*[lab=T-App]{
+    \seq{p}{q}{\ty{\Gamma}}{M}{\tylolli{p''}{q''}{T}{U}}
+    \and
+    \seq{p'}{q'}{\ty{\Delta}}{N}{T}
+    \and
+    \cs{q}<\cs{p'}
+    \and
+    \cs{q'}<\cs{p''}
+  }{\seq
+    {{p}\sqcap{p'}\sqcap{p''}}
+    {{q}\sqcup{q'}\sqcup{q''}}
+    {\ty{\Gamma},\ty{\Delta}}{M\;N}{U}}
+  
+  \inferrule*[lab=T-Unit]{
+  }{\seq{{\top}}{{\bot}}{\emptyenv}{\unit}{\tyunit}}
+  
+  \inferrule*[lab=T-LetUnit]{
+    \seq{p}{q}{\ty{\Gamma}}{M}{\tyunit}
+    \and
+    \seq{p'}{q'}{\ty{\Delta}}{N}{T}
+    \and
+    \cs{q}<\cs{p'}
+  }{\seq{{p}\sqcap{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\letunit{M}{N}}{T}}
+  
+  \inferrule*[lab=T-Pair]{
+    \seq{p}{q}{\ty{\Gamma}}{M}{T}
+    \and
+    \seq{p'}{q'}{\ty{\Delta}}{N}{U}
+    \and
+    \cs{q}<\cs{p'}
+  }{\seq{{p}\sqcap{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\pair{M}{N}}{\typrod{T}{U}}}
+  
+  \inferrule*[lab=T-LetPair]{
+    \seq{p}{q}{\ty{\Gamma}}{M}{\typrod{T}{T'}}
+    \and
+    \seq{p'}{q'}{\ty{\Delta},\tmty{x}{T},\tmty{y}{T'}}{N}{U}
+    \and
+    \cs{q}<\cs{p'}
+  }{\seq{{p}\sqcap{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\letpair{x}{y}{M}{N}}{U}}
+  
+  \inferrule*[lab=T-Inl]{
+    \seq{p}{q}{\ty{\Gamma}}{M}{T}
+    \and
+    \cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}
+  }{\seq{p}{q}{\ty{\Gamma}}{\inl{M}}{\tysum{T}{U}}}
+  
+  \inferrule*[lab=T-Inr]{
+    \seq{p}{q}{\ty{\Gamma}}{M}{T}
+    \and
+    \cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}
+  }{\seq{p}{q}{\ty{\Gamma}}{\inr{M}}{\tysum{T}{U}}}
+  
+  \inferrule*[lab=T-CaseSum]{
+    \seq{p}{q}{\ty{\Gamma}}{L}{\tysum{T}{T'}}
+    \and
+    \seq{p'}{q'}{\ty{\Delta},\tmty{x}{T}}{M}{U}
+    \and
+    \seq{p'}{q'}{\ty{\Delta},\tmty{y}{T'}}{N}{U}
+    \and
+    \cs{q}<\cs{p'}
+  }{\seq{{p}\sqcup{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\casesum{L}{x}{M}{y}{N}}{U}}
+  
+  \inferrule*[lab=T-Absurd]{
+    \seq{p}{q}{\ty{\Gamma}}{M}{\tyvoid}
+  }{\seq{p}{q}{\ty{\Gamma}}{\absurd{M}}{T}}
+\end{mathpar}
+\header[${\tmty{K}{T}}$]{Type Schemas for Constants}
+\begin{mathpar}
+  \tmty{\new}{\tylolli{\top}{\bot}{\tyunit}{\typrod{S}{\co{S}}}}
+  
+  \tmty{\spawn}{\tylolli{\top}{\bot}{(\tylolli{p}{q}{\tyunit}{\tyunit})}{\tyunit}}
+  \\
+  \tmty{\send}{\tylolli{\top}{o}{\typrod{T}{\tysend[{o}]{T}{S}}}{S}}
+  
+  \tmty{\recv}{\tylolli{\top}{o}{\tyrecv[{o}]{T}{S}}{\typrod{T}{S}}}
+  
+  \tmty{\close}{\tylolli{\top}{o}{\tyend[{o}]}{\tyunit}}
+\end{mathpar}
+\caption{Typing rules for Priority GV.}
+\label{fig:pgv-typing}
+\end{mdframed}
+\end{figure*}

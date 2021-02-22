@@ -10,8 +10,8 @@
 %
 %if style /= newcode
 %
-%format %              = "\hspercent "
-%format 1              = "\hsone "
+%format %              = percent_ "\hspercent "
+%format 1              = one_ "\hsone "
 %format \              = lambda_ "\hslambda "
 %format ->             = "\hsarrow{" `arrowfun_` "}{" `arrowlin_` "}{" lambdaperiod_ "}"
 %format percent_       = "\%"

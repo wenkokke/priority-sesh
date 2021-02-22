@@ -1,12 +1,5 @@
 \namespace*{sesh}{
-  % Sort macros
-  \providecommand{\tm}[1]{\ensuremath{{\color[HTML]{a40038}#1}}}
-  \providecommand{\ty}[1]{\ensuremath{{\color[HTML]{00007a}#1}}}
-  \providecommand{\cs}[1]{\ensuremath{{\color[HTML]{009180}#1}}}
-  \renewcommand{\Conid}[1]{\ty{\mathit{#1}}}
   % Types
-  \providecommand{\tmty}[2]{\ensuremath{\tm{#1}:\ty{#2}}}
-  \providecommand{\emptyenv}{\varnothing}
   \providecommand{\tyunit}[0]{\ensuremath{()}}
   \providecommand{\tyvoid}[0]{\Conid{Void}}
   \providecommand{\typrod}[2]{\ensuremath{(#1,#2)}}
@@ -14,15 +7,12 @@
   \providecommand{\tylolli}[2]{\ensuremath{#1\multimap#2}}
   \providecommand{\co}[1]{\ensuremath{\overline{#1}}}
   % Session types
-  \providecommand{\tysend}[3][]{\ensuremath{\Conid{Send}^{\cs{#1}}\;{#2}\;{#3}}}
-  \providecommand{\tyrecv}[3][]{\ensuremath{\Conid{Recv}^{\cs{#1}}\;{#2}\;{#3}}}
-  \providecommand{\tyend}[1][]{\ensuremath{\Conid{End}^{\cs{#1}}}}
-  \providecommand{\tyends}[1][]{\ensuremath{\Conid{End}_{!}^{\cs{#1}}}}
-  \providecommand{\tyendr}[1][]{\ensuremath{\Conid{End}_{?}^{\cs{#1}}}}
-  \providecommand{\tyselect}[3][]{\ensuremath{{#2}\mathbin{\oplus^{\cs{#1}}}{#3}}}
-  \providecommand{\tyoffer}[3][]{\ensuremath{{#2}\mathbin{\with^{\cs{#1}}}{#3}}}
-  \providecommand{\tyselectemp}[1][]{\ensuremath{{\oplus}^{#1}\{\}}}
-  \providecommand{\tyofferemp}[1][]{\ensuremath{{\with}^{#1}\{\}}}
+  \providecommand{\tysesh}[3]{\ensuremath{\ty{\Conid{Sesh}}_{\cs{#1}}^{\cs{#2}}\;{#3}}}
+  \providecommand{\tysend}[3][]{\ensuremath{\ty{\Conid{Send}}^{\cs{#1}}\;{#2}\;{#3}}}
+  \providecommand{\tyrecv}[3][]{\ensuremath{\ty{\Conid{Recv}}^{\cs{#1}}\;{#2}\;{#3}}}
+  \providecommand{\tyend}[1][]{\ensuremath{\ty{\Conid{End}}^{\cs{#1}}}}
+  \providecommand{\tyselect}[3][]{\ensuremath{\ty{\Conid{Select}}^{\cs{#1}}\;{#2}\;{#3}}}
+  \providecommand{\tyoffer}[3][]{\ensuremath{\ty{\Conid{Offer}}^{\cs{#1}}\;{#2}\;{#3}}}
   % Priorities
   \providecommand{\pr}[0]{\operatorname{Pr}}
   % Terms
@@ -61,7 +51,6 @@
   \providecommand{\offer}[5]{\ensuremath{\Varid{offer}\;#1\;\{\inl{#2}\mapsto{#3};\inr{#4}\mapsto{#5}\}}}
   \providecommand{\offeremp}[1]{\ensuremath{\Varid{offer}\;#1\;\{\}}}
   \providecommand{\withconstraint}[2]{#1\Rightarrow#2}
-  \providecommand{\mon}[3]{\ensuremath{\Conid{Sesh}_{\cs{#1}}^{\cs{#2}}\;{#3}}}
   \providecommand{\seq}[3]{\ensuremath{#1\vdash\tmty{#2}{#3}}}
 }{}
 \newcommand{\sesh}[1]{\namespace*{sesh}{}{#1}}

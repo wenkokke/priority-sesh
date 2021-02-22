@@ -7,6 +7,7 @@
 \let\:\undefined % amsmath conflicts with namespc
 \usepackage{namespc} % namespacing
 \usepackage{xcolor} % colour
+\usepackage{lipsum} % lorem ipsum
 
 % break math across pages
 \allowdisplaybreaks
@@ -22,3 +23,11 @@
 % translation (from pgv to sesh)
 \newcommand{\tosesh}[1]{%
   \llbracket#1\rrbracket}
+
+% sort macros
+\newcommand{\tm}[1]{\ensuremath{{\color[HTML]{a40038}#1}}}
+\newcommand{\ty}[1]{\ensuremath{{\color[HTML]{00007a}#1}}}
+\newcommand{\cs}[1]{\ensuremath{{\color[HTML]{009180}#1}}}
+\newcommand{\tmty}[2]{\ensuremath{\tm{#1}:\ty{#2}}}
+\newcommand{\emptyenv}{\varnothing}
+\newcommand{\conf}[1]{\mathcal{#1}}
