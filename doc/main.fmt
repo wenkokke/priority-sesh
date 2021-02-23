@@ -2,6 +2,8 @@
 %format Send o a s     = "\::sesh::tysend:[\cs{" o "}]{" a "}{" s "}:"
 %format Recv o a s     = "\::sesh::tyrecv:[\cs{" o "}]{" a "}{" s "}:"
 %format End  o         = "\::sesh::tyend:[\cs{" o "}]:"
+%format Gamma          = "\Gamma"
+%format Delta          = "\Delta"
 %format Bot            = "\cs{\bot}"
 %format Top            = "\cs{\top}"
 %format (Pr a)         = "\cs{\::sesh::pr::}\;\ty{" a "}"

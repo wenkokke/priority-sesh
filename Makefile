@@ -6,7 +6,7 @@ TEXSRC := $(shell find $(TEXDIR) -type f -and \( -name '*.tex' -or -name '*.bib'
 TEXSRC := $(filter-out $(LHSSRC:.lhs=.tex),$(TEXSRC))
 
 .PHONY: default
-default: build
+default: clean build view watch
 
 .PHONY: build
 build: $(TEXDIR)/$(MAIN).pdf

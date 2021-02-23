@@ -59,4 +59,6 @@
 \section{Relation to Priority GV}
 %include pgv.lhs
 
+\lipsum
+
 \end{document}

@@ -2,7 +2,6 @@
 %include linear.fmt
 %include main.fmt
 \begin{figure}
-\begin{mdframed}
 \centering
 \begin{code}
 return  :: a %1 -> Sesh (Pr a) Bot a
@@ -16,5 +15,4 @@ close   :: End o           %1  -> Sesh Top o ()
 \end{code}
 \caption{Typing rules for Sesh.}
 \label{fig:sesh-typing}
-\end{mdframed}
 \end{figure}

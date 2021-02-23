@@ -1,6 +1,12 @@
 %if False
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % linear.fmt
+%
+% Format -> as a period when part of a lambda abstraction,
+% as a lolli when used as part of a linear function arrow,
+% and as an arrow otherwise.
+%
+% Wen Kokke, February 2021, version 1.0
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %endif
 %
@@ -10,20 +16,19 @@
 %
 %if style /= newcode
 %
-%format %              = percent_ "\hspercent "
-%format 1              = one_ "\hsone "
-%format \              = lambda_ "\hslambda "
-%format ->             = "\hsarrow{" `arrowfun_` "}{" `arrowlin_` "}{" lambdaperiod_ "}"
+%format %              = percent_ "\hsPercentCmd "
+%format 1              = one_ "\hsOneCmd "
+%format \              = lambda_ "\hsLambdaCmd "
+%format ->             = "\hsArrow{" `arrow_` "}{" `lineararrow_` "}{" lambdaperiod_ "}"
 %format percent_       = "\%"
 %format one_           = "1"
 %format lambda_        = "\lambda "
-%format `arrowfun_`    = "\rightarrow "
-%format `arrowlin_`    = "\multimap "
+%format `arrow_`       = "\rightarrow "
+%format `lineararrow_` = "\multimap "
 %format lambdaperiod_  = "\mathpunct{.}"
 %
 \ReadOnlyOnce{linear.fmt}
 \makeatletter
-
 
 % The HaskellResetHook is a list to which things can
 % be added that reset the Haskell state to the beginning.
@@ -35,18 +40,19 @@
   \g@@addto@@macro\HaskellResetHook{#1}}
 \newcommand*{\HaskellReset}{\HaskellResetHook}
 
-\newcommand*\hsarrowfun[3]{#1}
-\newcommand*\hsarrowlin[3]{#2\global\let\hsarrow=\hsarrowfun}
-\newcommand*\hslambdaperiod[3]{#3\global\let\hsarrow=\hsarrowfun}
-\newcommand\hspercent{\global\let\hsone=\hsoneafterpercent}
-\newcommand*\hsoneafterpercent{%
-  \global\let\hsone=1
-  \global\let\hsarrow=\hsarrowlin}
-\newcommand\hslambda{\global\let\hsarrow=\hslambdaperiod}
+\newcommand*\hsNoOp{}
+\newcommand*\hsUnrestrictedArrow[3]{#1}
+\newcommand*\hsLinearArrow[3]{#2\global\let\hsArrow=\hsUnrestrictedArrow}
+\newcommand*\hsLambdaPeriod[3]{#3\global\let\hsArrow=\hsUnrestrictedArrow}
+\newcommand\hsPercentCmd{\global\let\hsOneCmd=\hsOneAfterPercentCmd}
+\newcommand*\hsOneAfterPercentCmd{%
+  \global\let\hsOneCmd=\hsNoOp
+  \global\let\hsArrow=\hsLinearArrow}
+\newcommand\hsLambdaCmd{\global\let\hsArrow=\hsLambdaPeriod}
 
 \AtHaskellReset{%
-  \global\let\hsone=1
-  \global\let\hsarrow=\hsarrowfun}
+  \global\let\hsOneCmd=\hsNoOp
+  \global\let\hsArrow=\hsUnrestrictedArrow}
 
 \HaskellReset
 

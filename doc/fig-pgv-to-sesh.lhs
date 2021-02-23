@@ -2,7 +2,6 @@
 %include linear.fmt
 %include main.fmt
 \begin{figure}
-\begin{mdframed}
 \centering
 \begin{align*}
   &\pgv{\tosesh{\ty{\tylolli{p}{q}{T}{U}}}}
@@ -31,46 +30,47 @@
 \end{align*}
 \caption{Priority GV types to Sesh types.}
 \label{fig:pgv-to-sesh-types}
-\end{mdframed}
 \end{figure}
-\begin{figure*}
-\begin{mdframed}
-\centering
-\begin{align*}
-  &\pgv{\tosesh{{x}}}
-  &&= |return x|
+\begin{figure}
+\[
+\begin{array}{lcl}
+  \pgv{\tosesh{{x}}}
+  &=& |return x|
   \\
-  &\pgv{\tosesh{{\lambda{x}.L}}}
-  &&= |return (\x -> tosesh L)|
+  \pgv{\tosesh{{\lambda{x}.L}}}
+  &=& |return (\x -> tosesh L)|
   \\
-  &\pgv{\tosesh{{L\;M}}}
-  &&= |tosesh L >>= \f -> M >>= \x -> f x|
+  \pgv{\tosesh{{L\;M}}}
+  &=& |tosesh L >>= \f -> M >>= \x -> f x|
   \\
-  &\pgv{\tosesh{{\unit}}}
-  &&= |return ()|
+  \pgv{\tosesh{{\unit}}}
+  &=& |return ()|
   \\
-  &\pgv{\tosesh{{\letunit{L}{M}}}}
-  &&= |tosesh L >>= \() -> M|
+  \pgv{\tosesh{{\letunit{L}{M}}}}
+  &=& |tosesh L >>= \() -> M|
   \\
-  &\pgv{\tosesh{{\pair{L}{M}}}}
-  &&= |tosesh L >>= \x -> tosesh M >>= \y -> return (x,y)|
+  \pgv{\tosesh{{\pair{L}{M}}}}
+  &=& |tosesh L >>= \x -> tosesh M >>= \y -> return (x,y)|
   \\
-  &\pgv{\tosesh{{\letpair{x}{y}{L}{M}}}}
-  &&= |tosesh L >>= \(x,y) -> M|
+  \pgv{\tosesh{{\letpair{x}{y}{L}{M}}}}
+  &=& |tosesh L >>= \(x,y) -> M|
   \\
-  &\pgv{\tosesh{{\inl{L}}}}
-  &&= |tosesh L >>= \x -> return (Left x)|
+  \pgv{\tosesh{{\absurd{L}}}}
+  &=& |tosesh L >>= \x -> absurd x|
   \\
-  &\pgv{\tosesh{{\inr{L}}}}
-  &&= |tosesh L >>= \y -> return (Right y)|
+  \pgv{\tosesh{{\inl{L}}}}
+  &=& |tosesh L >>= \x -> return (Left x)|
   \\
-  &\pgv{\tosesh{{\casesum{L}{x}{M}{y}{N}}}}
-  &&= |tosesh L >>= \x -> case x { Left x -> tosesh M; Right y -> tosesh N }|
+  \pgv{\tosesh{{\inr{L}}}}
+  &=& |tosesh L >>= \y -> return (Right y)|
   \\
-  &\pgv{\tosesh{{\absurd{L}}}}
-  &&= |tosesh L >>= \x -> absurd x|
-\end{align*}
+  \multicolumn{3}{l}{%
+  \pgv{\tosesh{{\casesum{L}{x}{M}{y}{N}}}} =}
+  \\
+  \multicolumn{3}{l}{%
+  \qquad\qquad|tosesh L >>= \x -> case x { Left x -> tosesh M; Right y -> tosesh N }|}
+\end{array}
+\]
 \caption{Priority GV terms to Sesh terms.}
 \label{fig:pgv-to-sesh-terms}
-\end{mdframed}
-\end{figure*}
+\end{figure}
