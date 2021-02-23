@@ -55,6 +55,7 @@
 \section{Introduction}
 
 \section{What's this Sesh?}
+%include sesh.lhs
 
 \section{Relation to Priority GV}
 %include pgv.lhs

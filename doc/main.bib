@@ -1,6 +1,6 @@
 @preamble{ " \newcommand{\noop}[1]{} " }
 
-@article{lindleymorris2016,
+@article{LindleyM16,
   author     = {Lindley, Sam and Morris, J. Garrett},
   title      = {Embedding Session Types in Haskell},
   year       = {2016},
@@ -20,8 +20,28 @@
   keywords   = {session types, embedded languages, linear types}
 }
 
-@unpublished{kokkedardha2021,
+@unpublished{KokkeD21,
   author     = "Wen Kokke and Ornela Dardha",
   title      = "Prioritise the Best Variation",
   note       = "Manuscript submitted for publication",
+}
+
+@article{Kokke19,
+  abstract   = {Rusty Variation (RV) is a library for session-typed communication
+                  in Rust which offers strong compile-time correctness
+                  guarantees. Programs written using RV are guaranteed to
+                  respect a specified protocol, and are guaranteed to be free
+                  from deadlocks and races.},
+  title      = {{Rusty Variation}: Deadlock-free Sessions with Failure in {Rust}},
+  author     = {Wen Kokke},
+  journal    = {{Electronic Proceedings in Theoretical Computer Science}},
+  volume     = {304},
+  issn       = {2075-2180},
+  publisher  = {Open Publishing Association},
+  year       = {2019},
+  month      = sep,
+  pages      = {48–60},
+  url        = {https://wen.works/public/pubs/eptcs2019b.pdf},
+  doi        = {10.4204/eptcs.304.4},
+  note       = {Renamed to Sesh},
 }
