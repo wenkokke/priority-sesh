@@ -158,6 +158,6 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q Void|
   }{|ToSesh Gamma|\vdash|tosesh L >>= \x -> absurd x :: Sesh p q (ToSesh T)|}
 \end{mathpar}
-\caption{Translation from Priority GV to Sesh preserves types.}
+\caption{Translation from Priority GV to Sesh preserves types, approximates priorities.}
 \label{fig:pgv-to-sesh-preservation}
 \end{figure*}
