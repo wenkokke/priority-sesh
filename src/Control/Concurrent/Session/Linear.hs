@@ -51,8 +51,12 @@ module Control.Concurrent.Session.Linear
 import           Prelude.Linear hiding (Max, Min, Dual)
 import qualified Control.Concurrent.Session.Raw.Linear as Raw
 import           Control.Monad.Linear
+import           Data.Int (Int8, Int16, Int32, Int64)
 import           Data.Kind (Type)
+import           Numeric.Natural (Natural)
 import           Data.Type.Equality (type (==))
+import           Data.Void (Void)
+import           Data.Word (Word8, Word16, Word32, Word64)
 import           GHC.TypeLits (Nat, CmpNat, type (+))
 import qualified GHC.TypeLits as Nat
 import qualified GHC.TypeLits.Extra as Nat
@@ -91,17 +95,45 @@ type family Max (p :: Priority) (q :: Priority) :: Priority where
   Max p        'Top     = 'Top
   Max 'Top     q        = 'Bot
 
---
--- TODO: this should probably be an OPEN type family with instances for all
---       basic types so that we can detect session types under, e.g., pairs,
---       sums, custom types, etc.
---
-type family Pr (a :: Type) :: Priority where
-  Pr (Send t o a s) = 'Val o
-  Pr (Recv t o a s) = 'Val o
-  Pr (End  t o)     = 'Val o
-  Pr a              = 'Top
 
+-- |Computes the lower bound on the priority of a type.
+type family Pr (a :: Type) :: Priority
+
+-- Instances for Sesh specific types.
+type instance Pr (Sesh t p q a) = p
+type instance Pr (Send t o a s) = 'Val o
+type instance Pr (Recv t o a s) = 'Val o
+type instance Pr (End  t o)     = 'Val o
+
+-- Instances for Linear Haskell specific types.
+type instance Pr (Ur a)         = Pr a
+
+-- Instances for built-in types.
+type instance Pr Bool           = 'Top
+type instance Pr Char           = 'Top
+type instance Pr Double         = 'Top
+type instance Pr Float          = 'Top
+type instance Pr Int            = 'Top
+type instance Pr Int8           = 'Top
+type instance Pr Int16          = 'Top
+type instance Pr Int32          = 'Top
+type instance Pr Int64          = 'Top
+type instance Pr Integer        = 'Top
+type instance Pr Natural        = 'Top
+type instance Pr Ordering       = 'Top
+type instance Pr Word           = 'Top
+type instance Pr Word8          = 'Top
+type instance Pr Word16         = 'Top
+type instance Pr Word32         = 'Top
+type instance Pr Word64         = 'Top
+type instance Pr ()             = 'Top
+type instance Pr Void           = 'Top
+type instance Pr [a]            = Pr a
+type instance Pr (Maybe a)      = Pr a
+type instance Pr (a -> b)       = Pr b
+type instance Pr (Either a b)   = Min (Pr a) (Pr b)
+type instance Pr (a, b)         = Min (Pr a) (Pr b)
+-- ...
 
 -- * Session types
 
