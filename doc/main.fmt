@@ -1,29 +1,59 @@
-%format Sesh (p) (q) a = "\::sesh::tysesh:{" p "}{" q "}{" a "}:"
-%format Send o a s     = "\::sesh::tysend:[\cs{" o "}]{" a "}{" s "}:"
-%format Recv o a s     = "\::sesh::tyrecv:[\cs{" o "}]{" a "}{" s "}:"
-%format End  o         = "\::sesh::tyend:[\cs{" o "}]:"
-%format Gamma          = "\Gamma"
-%format Delta          = "\Delta"
-%format Bot            = "\cs{\bot}"
-%format Top            = "\cs{\top}"
-%format (Pr a)         = "\cs{\::sesh::pr::}\;\ty{" a "}"
-%format (Min p q)      = p "\sqcap" q
-%format (Max p q)      = p "\sqcup" q
-%format p              = "\cs{p}"
-%format p'             = "\cs{p'}"
-%format p''            = "\cs{p''}"
-%format q              = "\cs{q}"
-%format q'             = "\cs{q'}"
-%format q''            = "\cs{q''}"
-%format return         = "\tm{\Varid{return}}"
-%format >>=            = "\tm{\bind}"
-%format join           = "\tm{\Varid{join}}"
-%format new            = "\tm{\Varid{new}}"
-%format spawn          = "\tm{\Varid{spawn}}"
-%format send           = "\tm{\Varid{send}}"
-%format recv           = "\tm{\Varid{recv}}"
-%format close          = "\tm{\Varid{close}}"
-%format (tosesh x)     = "\tosesh{" x "}"
-%format (ToSesh x)     = "\tosesh{" x "}"
-%format percent_       = "\empty"
-%format one_           = "\empty"
+%%% Haskell
+%
+%format Gamma        = "\Gamma"
+%format Delta        = "\Delta"
+%format ~            = "\sim"
+%format <$>          = "\fmap"
+%format percent_     = "\empty"
+%format one_         = "\empty"
+%
+%%% One-shot channels
+%
+%format SendOnce     = "\seshsendonce"
+%format RecvOnce     = "\seshrecvonce"
+%format newOneShot   = "\seshnewoneshot"
+%format sendOneShot  = "\seshsendoneshot"
+%format recvOneShot  = "\seshrecvoneshot"
+%
+%%% Raw Sesh
+%
+%format RawSesh      = "\seshmonraw"
+%format RawSend      = "\seshtysend"
+%format RawRecv      = "\seshtyrecv"
+%format RawEnd       = "\seshtyend"
+%format MkRawSend    = "\seshmksend"
+%format MkRawRecv    = "\seshmkrecv"
+%format MkRawEnd     = "\seshmkend"
+%format Session      = "\seshclass"
+%format Dual         = "\seshco"
+%
+%%% Priority Sesh
+%
+%format Sesh (p) (q) = "\seshmon{" p "}{" q "}"
+%format Send o       = "\seshtysend[\cs{" o "}]"
+%format Recv o       = "\seshtyrecv[\cs{" o "}]"
+%format End  o       = "\seshtyend[\cs{" o "}]"
+%format Bot          = "\cs{\bot}"
+%format Top          = "\cs{\top}"
+%format (Pr a)       = "\cs{\seshpr}\;\ty{" a "}"
+%format (Min p q)    = p "\sqcap" q
+%format (Max p q)    = p "\sqcup" q
+%format p            = "\cs{p}"
+%format p'           = "\cs{p'}"
+%format p''          = "\cs{p''}"
+%format q            = "\cs{q}"
+%format q'           = "\cs{q'}"
+%format q''          = "\cs{q''}"
+%format return       = "\tm{\Varid{return}}"
+%format >>           =            = "\tm{\bind}"
+%format join         = "\tm{\Varid{join}}"
+%format new          = "\tm{\Varid{new}}"
+%format spawn        = "\tm{\Varid{spawn}}"
+%format send         = "\tm{\Varid{send}}"
+%format recv         = "\tm{\Varid{recv}}"
+%format close        = "\tm{\Varid{close}}"
+%
+%%% Translation from PGV to Sesh
+%
+%format (tosesh x)   = "\tosesh{" x "}"
+%format (ToSesh x)   = "\tosesh{" x "}"

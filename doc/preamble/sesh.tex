@@ -1,56 +1,20 @@
-\namespace*{sesh}{
-  % Types
-  \providecommand{\tyunit}[0]{\ensuremath{()}}
-  \providecommand{\tyvoid}[0]{\Conid{Void}}
-  \providecommand{\typrod}[2]{\ensuremath{(#1,#2)}}
-  \providecommand{\tysum}[2]{\ensuremath{\Conid{Either}\;{#1}\;{#2}}}
-  \providecommand{\tylolli}[2]{\ensuremath{#1\multimap#2}}
-  \providecommand{\co}[1]{\ensuremath{\overline{#1}}}
-  % Session types
-  \providecommand{\tysesh}[3]{\ensuremath{\ty{\Conid{Sesh}}_{\cs{#1}}^{\cs{#2}}\;{#3}}}
-  \providecommand{\tysend}[3][]{\ensuremath{\ty{\Conid{Send}}^{\cs{#1}}\;{#2}\;{#3}}}
-  \providecommand{\tyrecv}[3][]{\ensuremath{\ty{\Conid{Recv}}^{\cs{#1}}\;{#2}\;{#3}}}
-  \providecommand{\tyend}[1][]{\ensuremath{\ty{\Conid{End}}^{\cs{#1}}}}
-  \providecommand{\tyselect}[3][]{\ensuremath{\ty{\Conid{Select}}^{\cs{#1}}\;{#2}\;{#3}}}
-  \providecommand{\tyoffer}[3][]{\ensuremath{\ty{\Conid{Offer}}^{\cs{#1}}\;{#2}\;{#3}}}
-  % Priorities
-  \providecommand{\pr}[0]{\operatorname{Pr}}
-  % Terms
-  \providecommand{\subst}[4][]{%
-    \if\relax\detokenize{#1}\relax
-    \ensuremath{#2\{#3/#4\}}
-    \else
-    \ensuremath{#2(\{#3/#4\}\cup#1)}
-    \fi}
-  \providecommand{\hole}[0]{\ensuremath{\square}}
-  \providecommand{\plug}[2]{\ensuremath{#1[#2]}}
-  \providecommand{\andthen}[2]{\ensuremath{#1;#2}}
-  \providecommand{\letbind}[3]{\ensuremath{\Varid{let}\;#1\mathbin{=}#2\;\Varid{in}\;#3}}
-  \providecommand{\pair}[2]{\ensuremath{(#1,#2)}}
-  \providecommand{\letpair}[4]{\ensuremath{\letbind{\pair{#1}{#2}}{#3}{#4}}}
-  \providecommand{\labinl}[0]{\ensuremath{\Varid{Left}}}
-  \providecommand{\labinr}[0]{\ensuremath{\Varid{Right}}}
-  \providecommand{\inl}[1]{\ensuremath{\labinl\;#1}}
-  \providecommand{\inr}[1]{\ensuremath{\labinr\;#1}}
-  \providecommand{\casesum}[5]{\ensuremath{\Varid{case}\;#1\left\{\inl{#2}\mapsto{#3};\;\inr{#4}\mapsto{#5}\right\}}}
-  \providecommand{\unit}[0]{\ensuremath{()}}
-  \providecommand{\letunit}[2]{\ensuremath{\letbind{\unit}{#1}{#2}}}
-  \providecommand{\absurd}[1]{\ensuremath{\Varid{absurd}\;#1}}
-  \providecommand{\link}[0]{\Varid{link}}
-  \providecommand{\new}[0]{\Varid{new}}
-  \providecommand{\halt}[0]{\Varid{halt}}
-  \providecommand{\retn}[0]{\Varid{return}}
-  \providecommand{\bind}[0]{\Varid{>>=}}
-  \providecommand{\spawn}[0]{\Varid{spawn}}
-  \providecommand{\send}[0]{\Varid{send}}
-  \providecommand{\recv}[0]{\Varid{recv}}
-  \providecommand{\fork}[0]{\Varid{fork}}
-  \providecommand{\wait}[0]{\Varid{wait}}
-  \providecommand{\close}[0]{\Varid{close}}
-  \providecommand{\select}[1]{\ensuremath{\Varid{select}\;#1}}
-  \providecommand{\offer}[5]{\ensuremath{\Varid{offer}\;#1\;\{\inl{#2}\mapsto{#3};\inr{#4}\mapsto{#5}\}}}
-  \providecommand{\offeremp}[1]{\ensuremath{\Varid{offer}\;#1\;\{\}}}
-  \providecommand{\withconstraint}[2]{#1\Rightarrow#2}
-  \providecommand{\seq}[3]{\ensuremath{#1\vdash\tmty{#2}{#3}}}
-}{}
-\newcommand{\sesh}[1]{\namespace*{sesh}{}{#1}}
+% One-shot channels
+%
+\newcommand{\seshsendonce}[0]{\ty{\Conid{Send}_1}}
+\newcommand{\seshrecvonce}[0]{\ty{\Conid{Recv}_1}}
+\newcommand{\seshnewoneshot}[0]{\Conid{new}_1}
+\newcommand{\seshsendoneshot}[0]{\Conid{send}_1}
+\newcommand{\seshrecvoneshot}[0]{\Conid{recv}_1}
+%
+% Session-typed channels (raw and prioritised)
+\newcommand{\seshmonraw}[0]{\ty{\Conid{Sesh}}}
+\newcommand{\seshmon}[2]{\seshmonraw_{\cs{#1}}^{\cs{#2}}}
+\newcommand{\seshclass}[0]{\ty{\Conid{Session}}}
+\newcommand{\seshco}[0]{\ty{\Conid{Dual}}}
+\newcommand{\seshtysend}[1][]{\ty{\Conid{Send}}^{\cs{#1}}}
+\newcommand{\seshtyrecv}[1][]{\ty{\Conid{Recv}}^{\cs{#1}}}
+\newcommand{\seshtyend}[1][]{\ty{\Conid{End}}^{\cs{#1}}}
+\newcommand{\seshmksend}[0]{\Conid{Send}}
+\newcommand{\seshmkrecv}[0]{\Conid{Recv}}
+\newcommand{\seshmkend}[0]{\Conid{End}}
+\newcommand{\seshpr}[0]{\operatorname{Pr}}

@@ -13,7 +13,7 @@ build: $(TEXDIR)/$(MAIN).pdf
 
 .PHONY: watch
 watch: require-fswatch
-	@fswatch -o $(TEXSRC) $(LHSSRC) | xargs -n1 -I{} make
+	@fswatch -o $(TEXSRC) $(LHSSRC) | xargs -n1 -I{} make build
 
 .PHONY: clean
 clean: require-latexmk
