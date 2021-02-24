@@ -51,13 +51,14 @@ pingWorks :: Test
 pingWorks = TestLabel "ping" $ TestCase (assert (runSeshIO ping))
   where
     ping :: Sesh t _ _ (Ur ())
-    ping = withNew (\(s1, s2) -> do
+    ping = do
+      (s1, s2) <- new
       spawn $ do
         s1 <- send @0 ((), s1)
         close @1 s1
       ((), s2) <- recv s2
       close s2
-      return $ Ur ())
+      return $ Ur ()
 
 
 -- * Calculator
@@ -88,24 +89,26 @@ calcWorks = TestLabel "calc" $ TestList
 
     -- Server offers calcuator, client chooses (negate 42).
     neg :: Sesh t _ _ (Ur Bool)
-    neg = withNew (\(s, s') -> do
-                      spawn (calcServer s')
-                      s <- selectLeft s
-                      s <- send (42, s)
-                      (x, s) <- recv s
-                      close s
-                      return $ move (x == -42))
+    neg = do
+      (s, s') <- new
+      spawn (calcServer s')
+      s <- selectLeft s
+      s <- send (42, s)
+      (x, s) <- recv s
+      close s
+      return $ move (x == -42)
 
     -- Server offers calculator, client chooses 4 + 5.
     add :: Sesh t _ _ (Ur Bool)
-    add = withNew (\(s, s') -> do
-                      spawn (calcServer s')
-                      s <- selectRight s
-                      s <- send (4, s)
-                      s <- send (5, s)
-                      (x, s) <- recv s
-                      close s
-                      return $ move (x == 9))
+    add = do
+      (s, s') <- new
+      spawn (calcServer s')
+      s <- selectRight s
+      s <- send (4, s)
+      s <- send (5, s)
+      (x, s) <- recv s
+      close s
+      return $ move (x == 9)
 
 
 -- * Cancellation
@@ -119,19 +122,21 @@ cancelWorks = TestLabel "cancel" $ TestList
   where
     -- Server cancels, client tries to receive.
     cancelRecv :: Sesh t _ _ (Ur ())
-    cancelRecv = withNew (\(s, s') -> do
-                             spawn (cancel s')
-                             ((), s) <- recv @0 s
-                             close @1 s
-                             return $ Ur ())
+    cancelRecv = do
+      (s, s') <- new
+      spawn (cancel s')
+      ((), s) <- recv @0 s
+      close @1 s
+      return $ Ur ()
 
     -- Server cancels, client tries to send.
     cancelSend :: Sesh t _ _ (Ur ())
-    cancelSend = withNew (\(s, s') -> do
-                             spawn (cancel s')
-                             s <- send @0 ((), s)
-                             close @1 s
-                             return $ Ur ())
+    cancelSend = do
+      (s, s') <- new
+      spawn (cancel s')
+      s <- send @0 ((), s)
+      close @1 s
+      return $ Ur ()
 
 -- * Deadlock (does not compile)
 
@@ -139,22 +144,20 @@ cancelWorks = TestLabel "cancel" $ TestList
 -- deadlockFails = TestLabel "deadlock" $ TestCase (assert (runSeshIO deadlock))
 --   where
 --     deadlock :: Sesh t 'Top ('Val 3) (Ur ())
---     deadlock =
---       withNew (\(s1, r1) ->
---         withNew (\(s2, r2) -> do
---
---           spawn $ do ((), r1) <- recv @0 r1
---                      close @1 r1
---                      s2 <- send @2 ((), s2)
---                      close @3 s2
---
---           ((), r2) <- recv @2 r2
---           close @3 r2
---           s1 <- send @0 ((), s1)
---           close @1 s1
---
---           return $ Ur ()
---         ))
+--     deadlock = do
+--       (s1, r1) <- new
+--       (s2, r2) <- new
+--       spawn $ do ((), r1) <- recv @0 r1
+--                  close @1 r1
+--                  s2 <- send @2 ((), s2)
+--                  close @3 s2
+
+--       ((), r2) <- recv @2 r2
+--       close @3 r2
+--       s1 <- send @0 ((), s1)
+--       close @1 s1
+
+--       return $ Ur ()
 
 -- -}
 -- -}

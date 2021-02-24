@@ -55,6 +55,4 @@
 %include sesh.lhs
 %include pgv.lhs
 
-\lipsum
-
 \end{document}

@@ -10,7 +10,26 @@
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
-module Control.Concurrent.Session.Raw.Linear where
+module Control.Concurrent.Session.Raw.Linear
+  -- Session types and channels
+  ( Send
+  , Recv
+  , End
+  , Session (Dual, new)
+  -- Communication primitives
+  , spawn
+  , send
+  , recv
+  , close
+  , cancel
+  , connect
+  -- Binary choice
+  , Select
+  , Offer
+  , selectLeft
+  , selectRight
+  , offerEither
+  ) where
 
 import           Prelude.Linear hiding (Dual, IO)
 import           Control.Exception
@@ -60,14 +79,8 @@ instance Session End where
 
 -- * Communication primitives
 
-withNew :: Session s => ((s, Dual s) %1 -> Linear.IO a) %1 -> Linear.IO a
-withNew k = new >>= k
-
 spawn :: Linear.IO () %1 -> Linear.IO ()
 spawn k = consume <$> forkLinearIO k
-
-connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
-connect k1 k2 = new >>= \(there, here) -> spawn (k1 there) >>= \() -> k2 here
 
 send :: (a, Send a s) %1 -> Linear.IO s
 send (x, Send chan_s) = do
@@ -83,6 +96,9 @@ close (End sync) = quiet $ OneShot.sync sync
 
 cancel :: Session s => s %1 -> Linear.IO ()
 cancel s = return $ consume s
+
+connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
+connect k1 k2 = do (s1, s2) <- new; spawn (k1 s1); k2 s2
 
 -- |Suppress |BlockedIndefinitelyOnMVar| exceptions.
 quiet :: Linear.IO () %1 -> Linear.IO ()

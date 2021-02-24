@@ -34,7 +34,7 @@ module Control.Concurrent.Session.Linear
   , Recv
   , End
   -- Communication primitives
-  , withNew
+  , new
   , spawn
   , send
   , recv
@@ -232,33 +232,32 @@ runSeshIO mx = unSesh mx
 -- * Communication primitives
 
 -- |Create a new channel with two dual endpoints.
---
--- NOTE: This operation is /unsafe/ and should not be exported.
---
 new :: Session s => Sesh t 'Top 'Bot (s, Dual s)
 new = Sesh $ do
   (here, there) <- Raw.new
   return (fromRaw here, fromRaw there)
 
-withNew :: (Session s, 'Bot < p) => ((s, Dual s) %1 -> Sesh t p q a) %1 -> Sesh t p q a
-withNew mf = ibind mf new
-
+-- |Spawn off the first argument as a new  thread.
 spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
 spawn mx = Sesh $ Raw.spawn (unSesh mx)
 
-send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) (s)
+-- |Send a value over a channel.
+send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
 send (x, s) = Sesh $ do
   s <- Raw.send (x, toRaw s)
   return (fromRaw s)
 
+-- |Receive a value over a channel.
 recv :: forall o s a t. Session s => Recv t o a s %1 -> Sesh t ('Val o) ('Val o) (a, s)
 recv s = Sesh $ do
   (x, s) <- Raw.recv (toRaw s)
   return (x, fromRaw s)
 
+-- |Close a session.
 close :: forall o t. End t o %1 -> Sesh t ('Val o) ('Val o) ()
 close s = Sesh $ Raw.close (toRaw s)
 
+-- |Cancel a session.
 cancel :: forall s t. Session s => s %1 -> Sesh t 'Top 'Bot ()
 cancel s = Sesh $ Raw.cancel (toRaw s)
 
@@ -279,11 +278,11 @@ selectLeft :: ( Session s1
               , 'Val o < Pr s1) =>
   Select t o s1 s2 %1 ->
   Sesh t (Min ('Val o) (Pr s1)) ('Val o) s1
-selectLeft s =
-  withNew (\(here, there) ->
-              send (Left there, s) >>>= \s ->
-              cancel s >>>= \() ->
-              ireturn here)
+selectLeft s = do
+  new >>>= \(here, there) ->
+    send (Left there, s) >>>= \s ->
+    cancel s >>>= \() ->
+    ireturn here
 
 selectRight :: ( Session s1
                , Session s2
@@ -294,10 +293,10 @@ selectRight :: ( Session s1
   Select t o s1 s2 %1 ->
   Sesh t (Min ('Val o) (Pr s2)) ('Val o) s2
 selectRight s =
-  withNew (\(here, there) ->
-              send (Right there, s) >>>= \s ->
-              cancel s >>>= \() ->
-              ireturn here)
+  new >>>= \(here, there) ->
+    send (Right there, s) >>>= \s ->
+    cancel s >>>= \() ->
+    ireturn here
 
 offerEither :: (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
   (Either s1 s2 %1 -> Sesh t p q a) %1 ->
