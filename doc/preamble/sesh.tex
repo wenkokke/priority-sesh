@@ -1,20 +1,5 @@
-% One-shot channels
-%
-\newcommand{\seshsendonce}[0]{\ty{\Conid{Send}_1}}
-\newcommand{\seshrecvonce}[0]{\ty{\Conid{Recv}_1}}
-\newcommand{\seshnewoneshot}[0]{\Conid{new}_1}
-\newcommand{\seshsendoneshot}[0]{\Conid{send}_1}
-\newcommand{\seshrecvoneshot}[0]{\Conid{recv}_1}
-%
 % Session-typed channels (raw and prioritised)
-\newcommand{\seshmonraw}[0]{\ty{\Conid{Sesh}}}
-\newcommand{\seshmon}[2]{\seshmonraw_{\cs{#1}}^{\cs{#2}}}
-\newcommand{\seshclass}[0]{\ty{\Conid{Session}}}
-\newcommand{\seshco}[0]{\ty{\Conid{Dual}}}
+\newcommand{\seshtymon}[2]{\ty{\Conid{Sesh}}_{\cs{#1}}^{\cs{#2}}}
 \newcommand{\seshtysend}[1][]{\ty{\Conid{Send}}^{\cs{#1}}}
 \newcommand{\seshtyrecv}[1][]{\ty{\Conid{Recv}}^{\cs{#1}}}
 \newcommand{\seshtyend}[1][]{\ty{\Conid{End}}^{\cs{#1}}}
-\newcommand{\seshmksend}[0]{\Conid{Send}}
-\newcommand{\seshmkrecv}[0]{\Conid{Recv}}
-\newcommand{\seshmkend}[0]{\Conid{End}}
-\newcommand{\seshpr}[0]{\operatorname{Pr}}

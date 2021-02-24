@@ -137,14 +137,9 @@ type instance Pr (a, b)         = Min (Pr a) (Pr b)
 
 -- * Session types
 
-data Send t (o :: Nat) a s where
-  Send :: Session s => Raw.Send a (Raw s) %1 -> Send t o a s
-
-data Recv t (o :: Nat) a s where
-  Recv :: Session s => Raw.Recv a (Raw s) %1 -> Recv t o a s
-
-data End  t (o :: Nat) where
-  End :: Raw.End %1 -> End t o
+data Send t (o :: Nat) a s = Session s => Send (Raw.Send a (Raw s))
+data Recv t (o :: Nat) a s = Session s => Recv (Raw.Recv a (Raw s))
+data End  t (o :: Nat)     = End Raw.End
 
 
 -- * Duality and conversion to Raw representation

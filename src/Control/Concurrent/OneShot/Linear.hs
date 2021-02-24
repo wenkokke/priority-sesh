@@ -4,11 +4,14 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Control.Concurrent.OneShot.Linear
-  ( Sender
-  , Receiver
+  ( SendOnce
+  , RecvOnce
+  , SyncOnce
   , new
+  , newSync
   , send
-  , receive
+  , recv
+  , sync
   ) where
 
 import           Prelude.Linear
@@ -21,21 +24,33 @@ import qualified System.IO.Linear as Linear
 import qualified Unsafe.Linear as Unsafe
 
 
-data Sender a where
-  Sender :: MVar a %1 -> Sender a
 
-data Receiver a where
-  Receiver :: MVar a %1 -> Receiver a
+-- * One-shot channels
+
+newtype SendOnce a = SendOnce (MVar a)
+newtype RecvOnce a = RecvOnce (MVar a)
+
+new :: Linear.IO (SendOnce a, RecvOnce a)
+new = bimap (SendOnce . unur) (RecvOnce . unur) . dup2 <$> newEmptyMVar
+
+send :: SendOnce a %1 -> a %1 -> Linear.IO ()
+send (SendOnce mvar) x = putMVar mvar x
+
+recv :: RecvOnce a %1 -> Linear.IO a
+recv (RecvOnce mvar) = takeMVar mvar
 
 
-new :: Linear.IO (Sender a, Receiver a)
-new = bimap (Sender . unur) (Receiver . unur) . dup2 <$> newEmptyMVar
+-- * Synchronisation construct
 
-send :: Sender a %1 -> a %1 -> Linear.IO (Ur ())
-send (Sender mvar) x = do
-  putMVar mvar x
-  return $ Ur ()
+newtype SyncOnce   = SyncOnce (SendOnce (), RecvOnce ())
 
-receive :: Receiver a %1 -> Linear.IO a
-receive (Receiver mvar) =
-  takeMVar mvar
+newSync :: Linear.IO (SyncOnce, SyncOnce)
+newSync = do
+  (chan_s1, chan_r1) <- new
+  (chan_s2, chan_r2) <- new
+  return (SyncOnce (chan_s1, chan_r2), SyncOnce (chan_s2, chan_r1))
+
+sync :: SyncOnce %1 -> Linear.IO ()
+sync (SyncOnce (chan_s, chan_r)) = do
+  send chan_s ()
+  recv chan_r

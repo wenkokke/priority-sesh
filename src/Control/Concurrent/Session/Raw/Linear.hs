@@ -26,57 +26,37 @@ import qualified Unsafe.Linear as Unsafe
 
 -- * Session types
 
-data Send a s where
-  Send :: Session s => OneShot.Sender (a, Dual s) %1 -> Send a s
-
-data Recv a s where
-  Recv :: Session s => OneShot.Receiver (a, s) %1 -> Recv a s
-
-data End where
-  End :: OneShot.Sender () %1 -> OneShot.Receiver () %1 -> End
+data Send a s = Session s => Send (OneShot.SendOnce (a, Dual s))
+data Recv a s = Session s => Recv (OneShot.RecvOnce (a, s))
+data End      = End OneShot.SyncOnce
 
 
 -- * Duality and session initiation
 
 instance Consumable (Send a s) where
-  consume = Unsafe.toLinear $ \s -> ()
+  consume = Unsafe.toLinear $ \_s -> ()
 
 instance Consumable (Recv a s) where
-  consume = Unsafe.toLinear $ \s -> ()
+  consume = Unsafe.toLinear $ \_s -> ()
 
 instance Consumable End where
-  consume = Unsafe.toLinear $ \s -> ()
+  consume = Unsafe.toLinear $ \_s -> ()
 
 class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
   type Dual s = result | result -> s
-
   new :: Linear.IO (s, Dual s)
 
 instance Session s => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
-
-  new :: Linear.IO (Send a s, Recv a (Dual s))
-  new = do
-    (sender, receiver) <- OneShot.new
-    return (Send sender, Recv receiver)
+  new = bimap Send Recv <$> OneShot.new
 
 instance Session s => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
-
-  new :: Linear.IO (Recv a s, Send a (Dual s))
-  new = do
-    (sender, receiver) <- OneShot.new
-    return (Recv receiver, Send sender)
+  new = bimap Recv Send . swap <$> OneShot.new
 
 instance Session End where
   type Dual End = End
-
-  new :: Linear.IO (End, End)
-  new = do
-    (sender1, receiver1) <- OneShot.new
-    (sender2, receiver2) <- OneShot.new
-    return (End sender1 receiver2, End sender2 receiver1)
-
+  new = bimap End End <$> OneShot.newSync
 
 -- * Communication primitives
 
@@ -90,28 +70,26 @@ connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) 
 connect k1 k2 = new >>= \(there, here) -> spawn (k1 there) >>= \() -> k2 here
 
 send :: (a, Send a s) %1 -> Linear.IO s
-send (x, Send sender) = do
+send (x, Send chan_s) = do
   (here, there) <- new
-  Ur () <- quiet $ OneShot.send sender (x, there)
+  () <- quiet $ OneShot.send chan_s (x, there)
   return here
 
 recv :: Recv a s %1 -> Linear.IO (a, s)
-recv (Recv receiver) = do
-  (x, here) <- OneShot.receive receiver
-  return (x, here)
+recv (Recv chan_r) = OneShot.recv chan_r
 
 close :: End %1 -> Linear.IO ()
-close (End sender receiver) = do
-  Ur () <- quiet $ OneShot.send sender ()
-  Ur () <- quiet $ move <$> OneShot.receive receiver
-  return $ ()
+close (End sync) = quiet $ OneShot.sync sync
 
 cancel :: Session s => s %1 -> Linear.IO ()
 cancel s = return $ consume s
 
 -- |Suppress |BlockedIndefinitelyOnMVar| exceptions.
-quiet :: Linear.IO (Ur ()) %1 -> Linear.IO (Ur ())
-quiet x = Unsafe.toLinear2 Linear.catch x (\BlockedIndefinitelyOnMVar -> return $ Ur ())
+quiet :: Linear.IO () %1 -> Linear.IO ()
+quiet x = do
+  unur <$> Unsafe.toLinear2 Linear.catch
+    (do x; return $ Ur ())
+    (\BlockedIndefinitelyOnMVar -> return $ Ur ())
 
 
 -- * Binary choice
