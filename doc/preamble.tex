@@ -7,7 +7,12 @@
 \let\:\undefined % amsmath conflicts with namespc
 \usepackage{namespc} % namespacing
 \usepackage{xcolor} % colour
-\usepackage{lipsum} % lorem ipsum
+
+% todonotes
+\usepackage{todonotes,regexpatch}
+\makeatletter
+\xpatchcmd{\@todo}{\setkeys{todonotes}{#1}}{\setkeys{todonotes}{inline,#1}}{}{}
+\makeatother
 
 % break math across pages
 \allowdisplaybreaks

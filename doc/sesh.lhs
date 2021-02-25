@@ -104,11 +104,21 @@ connect k1 k2 = do (s1, s2) <- new; spawn (k1 s1); k2 s2
 
 \subsection{Session-typed channels with priority}\label{sec:priority-sesh}
 
+Priorities are either |Bot|, a~natural number, or |Top|. We let |p| and |q| range over \emph{all} priorities, and |o| over natural numbers. A~priority |o| represents the time at which some action happens. Actions with lower priorities happen before actions with higher priorities. Actions always have natural number priorities. The values |Top| and |Bot| are used as the neutral elements in lower and upper priority bounds, respectively.
+
 \begin{spec}
 data Priority = Bot | Val Nat | Top
 \end{spec}
 
-We define |<|, |Min|, and |Max| on priorities as expected.
+We define |Send o|, |Recv o|, and |End o|, which decorate the raw sessions from~\cref{sec:unsafe-sesh} with the priority |o| of the communication, \ie, when does the communication happen? Operationally, these types are mere wrappers.
+
+We define the |Sesh p q| monad, which decorates |Linear.IO| with a lower bound |p| and an upper bound |q| on the priorities its communications, \ie, if you run the monad, when does communication begin and end?
+
+\begin{spec}
+newtype Sesh p q a = MkSesh { runSeshIO :: Linear.IO a }
+\end{spec}
+
+We define strict inequality ($|<|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as usual, and define an open type family (|Pr|) which returns a \emph{lower bound} on the priority for any type:
 
 \begin{spec}
 type family Pr (a :: Type) :: Priority
@@ -123,21 +133,19 @@ type instance Pr (a, b)        = Min (Pr a) (Pr b)
 {-"\dots"-}
 \end{spec}
 
-\begin{spec}
-newtype Sesh p q a = MkSesh { runSeshIO :: Linear.IO a }
+The monad operations for |Sesh p q| merely wrap those for |Linear.IO|.
 
+\begin{spec}
 ireturn :: a %1 -> Sesh (Pr a) Bot a
 ireturn x = MkSesh $ return x
 
 (>>>=) :: (q < p') => Sesh p q a %1 -> (a %1-> Sesh p' q' b) %1 -> Sesh (Min p p') (Max q q') b
-mx >>>= f = MkSesh $ runSeshIO mx >>= \x -> runSeshIO (f x)
+mx >>>= mf = MkSesh $ runSeshIO mx >>= \x -> runSeshIO (mf x)
 \end{spec}
 
-We define |Send o|, |Recv o|, and |End o|, which wrap the raw sessions from~\cref{sec:unsafe-sesh}.
 
 \begin{spec}
-withNew  ::  (Session s, Bot < p) =>
-             ((s, Dual s) %1 -> Sesh p q a) %1 -> Sesh p q a
+new      :: Session s => Sesh Top Bot (s, Dual s)
 spawn    :: Sesh p q () %1 -> Sesh Top Bot ()
 send     :: Session s => (a, Send o a s) %1 -> Sesh (Val o) (Val o) s
 recv     :: Session s => Recv o a s %1 -> Sesh (Val o) (Val o) (a, s)
