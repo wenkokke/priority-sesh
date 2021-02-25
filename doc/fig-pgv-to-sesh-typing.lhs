@@ -6,21 +6,21 @@
 \begin{mathpar}
   \inferrule*{
     %[lab=T-Var]
-  }{\pgv{\seq{\pr(\ty{T})}{\bot}{\tmty{x}{T}}{x}{T}}}
+  }{\pgv{\seq{\top}{\bot}{\tmty{x}{T}}{x}{T}}}
   =
   \inferrule*{
     |x :: (ToSesh T)|\vdash|x :: (ToSesh T)|
-  }{|ireturn x :: Sesh (Pr (ToSesh T)) Bot (ToSesh T)|}
+  }{|ireturn x :: Sesh Top Bot (ToSesh T)|}
   \\
 
   \inferrule*{
     %[lab=T-Lam]
-    \pgv{\seq{{p}\sqcap{\pr(\ty{T})}}{q}{\ty{\Gamma},\tmty{x}{T}}{L}{U}}
-  }{\pgv{\seq{p}{{\bot}}{\ty{\Gamma}}{\lambda x.L}{\tylolli{p}{q}{T}{U}}}}
-  \approx
+    \pgv{\seq{p}{q}{\ty{\Gamma},\tmty{x}{T}}{L}{U}}
+  }{\pgv{\seq{\top}{\bot}{\ty{\Gamma}}{\lambda x.L}{\tylolli{p}{q}{T}{U}}}}
+  =
   \inferrule*{
-    |ToSesh Gamma, x :: ToSesh T|\vdash|tosesh L :: Sesh (p `Min` Pr (ToSesh T)) q (ToSesh U)|
-  }{|ireturn (\x -> tosesh L) :: Sesh (p `Min` Pr (ToSesh T)) Bot (ToSesh T %1 -> Sesh (p `Min` Pr (ToSesh T)) q (ToSesh U))|}
+    |ToSesh Gamma, x :: ToSesh T|\vdash|tosesh L :: Sesh p q (ToSesh U)|
+  }{|ireturn (\x -> tosesh L) :: Sesh Top Bot (ToSesh T %1 -> Sesh p q (ToSesh U))|}
   \\
 
   \inferrule*{
@@ -46,7 +46,7 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh T %1 -> Sesh p'' q'' (ToSesh U))|
     \sep
     |ToSesh Delta|\vdash|tosesh M :: Sesh p' q' (ToSesh T)|
-  }{|tosesh L >>>= \f -> tosesh M >>= \x -> f x :: (q < p', q' < p'') => Sesh (p `Min` p' `Min` p'') (q `Max` q' `Max` q'') (ToSesh U)|}
+  }{|tosesh L >>>= \f -> tosesh M >>= \x -> f x :: (LT q p', LT q' p'') => Sesh (p `Min` p' `Min` p'') (q `Max` q' `Max` q'') (ToSesh U)|}
   \\
 
   \inferrule*{
@@ -70,7 +70,7 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q ()|
     \sep
     |ToSesh Delta|\vdash|tosesh M :: Sesh p' q' (ToSesh T)|
-  }{|tosesh L >>>= \() -> M :: (p < q') => Sesh (Min p p') (Max q q') (ToSesh T)|}
+  }{|tosesh L >>>= \() -> M :: (LT p q') => Sesh (Min p p') (Max q q') (ToSesh T)|}
   \\
 
   \inferrule*{
@@ -86,7 +86,7 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh T)|
     \sep
     |ToSesh Delta|\vdash|tosesh M :: Sesh p' q' (ToSesh U)|
-  }{|tosesh L >>>= \x -> tosesh M >>= \y -> ireturn (x,y) :: (q < p') => Sesh (Min p p') (Max q q') (ToSesh T, ToSesh U)|}
+  }{|tosesh L >>>= \x -> tosesh M >>= \y -> ireturn (x,y) :: (LT q p') => Sesh (Min p p') (Max q q') (ToSesh T, ToSesh U)|}
   \\
 
   \inferrule*{
@@ -102,31 +102,31 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh T, ToSesh T')|
     \sep
     |ToSesh Delta, x :: ToSesh T, y :: ToSesh T'|\vdash|tosesh M :: Sesh p' q' (ToSesh U)|
-  }{|tosesh L >>>= \(x,y) -> M :: (q < p') => Sesh (Min p p') (Max q q') (ToSesh U)|}
+  }{|tosesh L >>>= \(x,y) -> M :: (LT q p') => Sesh (Min p p') (Max q q') (ToSesh U)|}
   \\
 
   \inferrule*{
     %[lab=T-Inl]
     \pgv{\seq{p}{q}{\ty{\Gamma}}{L}{T}}
-    \sep
-    \pgv{\cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}}
+    % \sep
+    % \pgv{\cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}}
   }{\pgv{\seq{p}{q}{\ty{\Gamma}}{\inl{L}}{\tysum{T}{U}}}}
-  \approx
+  =
   \inferrule*{
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh T)|
-  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Left x) :: (q < Pr (ToSesh T)) => Sesh (p `Min` Pr (ToSesh T)) q (Either (ToSesh T) (ToSesh U))|}
+  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Left x) :: Sesh p q (Either (ToSesh T) (ToSesh U))|}
   \\
 
   \inferrule*{
     %[lab=T-Inr]
     \pgv{\seq{p}{q}{\ty{\Gamma}}{L}{T}}
-    \sep
-    \pgv{\cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}}
+    % \sep
+    % \pgv{\cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}}
   }{\pgv{\seq{p}{q}{\ty{\Gamma}}{\inr{L}}{\tysum{T}{U}}}}
-  \approx
+  =
   \inferrule*{
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh U)|
-  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Right x) :: (q < Pr (ToSesh U)) => Sesh (p `Min` Pr (ToSesh U)) q (Either (ToSesh T) (ToSesh U))|}
+  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Right x) :: Sesh p q (Either (ToSesh T) (ToSesh U))|}
   \\
 
   \inferrule*{
@@ -158,6 +158,6 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q Void|
   }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> absurd x :: Sesh p q (ToSesh T)|}
 \end{mathpar}
-\caption{Translation from Priority GV to Sesh preserves types, approximates priorities.}
+\caption{Translation from Priority GV to Sesh preserves types.}
 \label{fig:pgv-to-sesh-preservation}
 \end{figure*}

@@ -3,11 +3,11 @@
 \header[${\seq{p}{q}{\ty{\Gamma}}{M}{T}}$]{Static Typing Rules}
 \begin{mathpar}
   \inferrule*[lab=T-Var]{
-  }{\seq{\pr(\ty{T})}{\bot}{\tmty{x}{T}}{x}{T}}
-  
+  }{\seq{\top}{\bot}{\tmty{x}{T}}{x}{T}}
+
   \inferrule*[lab=T-Lam]{
-    \seq{{p}\sqcap{\pr(\ty{T})}}{q}{\ty{\Gamma},\tmty{x}{T}}{M}{U}
-  }{\seq{p}{{\bot}}{\ty{\Gamma}}{\lambda x.M}{\tylolli{p}{q}{T}{U}}}
+    \seq{p}{q}{\ty{\Gamma},\tmty{x}{T}}{M}{U}
+  }{\seq{\top}{\bot}{\ty{\Gamma}}{\lambda x.M}{\tylolli{p}{q}{T}{U}}}
   
   \inferrule*[lab=T-Const]{
   }{\seq{{\top}}{{\bot}}{\emptyenv}{K}{T}}
@@ -54,14 +54,10 @@
   
   \inferrule*[lab=T-Inl]{
     \seq{p}{q}{\ty{\Gamma}}{M}{T}
-    \and
-    \cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}
   }{\seq{p}{q}{\ty{\Gamma}}{\inl{M}}{\tysum{T}{U}}}
   
   \inferrule*[lab=T-Inr]{
     \seq{p}{q}{\ty{\Gamma}}{M}{T}
-    \and
-    \cs{\pr(\ty{T})}=\cs{\pr(\ty{U})}
   }{\seq{p}{q}{\ty{\Gamma}}{\inr{M}}{\tysum{T}{U}}}
   
   \inferrule*[lab=T-CaseSum]{
@@ -83,6 +79,8 @@
   \tmty{\new}{\tylolli{\top}{\bot}{\tyunit}{\typrod{S}{\co{S}}}}
   
   \tmty{\spawn}{\tylolli{\top}{\bot}{(\tylolli{p}{q}{\tyunit}{\tyunit})}{\tyunit}}
+
+  \tmty{\cancel}{\tylolli{\top}{\bot}{S}{\tyunit}}
   \\
   \tmty{\send}{\tylolli{\top}{o}{\typrod{T}{\tysend[{o}]{T}{S}}}{S}}
   

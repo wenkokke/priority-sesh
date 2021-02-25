@@ -41,7 +41,7 @@ mx >> my = mx Session.>>>= \x -> x `lseq` my
   Sesh t (Min p p') (Max q q') b
 (>>=) = (Session.>>>=)
 
-return :: a %1 -> Sesh t (Pr a) 'Bot a
+return :: a %1 -> Sesh t 'Top 'Bot a
 return = Session.ireturn
 
 
@@ -151,12 +151,10 @@ cancelWorks = TestLabel "cancel" $ TestList
 --                  close @1 r1
 --                  s2 <- send @2 ((), s2)
 --                  close @3 s2
-
 --       ((), r2) <- recv @2 r2
 --       close @3 r2
 --       s1 <- send @0 ((), s1)
 --       close @1 s1
-
 --       return $ Ur ()
 
 -- -}

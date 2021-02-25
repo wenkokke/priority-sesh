@@ -64,20 +64,12 @@
 %format Bot          = "\cs{\bot}"
 %format Top          = "\cs{\top}"
 %format Pr           = "\cs{\Conid{Pr}}"
-%format <            = "\mathrel{\cs{<}}"
+%format `LT`         = "\mathrel{\cs{<}}"
 %format `Min`        = "\mathbin{\cs{\sqcap}}"
 %format `Max`        = "\mathbin{\cs{\sqcup}}"
-%format Min (p) (q)  = p `Min` q
-%format Max (p) (q)  = p `Max` q
-%format o            = "\cs{o}"
-%format o'           = "\cs{o'}"
-%format o''          = "\cs{o''}"
-%format p            = "\cs{p}"
-%format p'           = "\cs{p'}"
-%format p''          = "\cs{p''}"
-%format q            = "\cs{q}"
-%format q'           = "\cs{q'}"
-%format q''          = "\cs{q''}"
+%format LT  (p) (q)  = "\cs{" p "}" `LT` "\cs{" q "}"
+%format Min (p) (q)  = "\cs{" p "}" `Min` "\cs{" q "}"
+%format Max (p) (q)  = "\cs{" p "}" `Max` "\cs{" q "}"
 %
 %%% Translation from PGV to Sesh
 %

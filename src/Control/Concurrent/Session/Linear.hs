@@ -19,7 +19,6 @@ module Control.Concurrent.Session.Linear
   , type (<)
   , Min
   , Max
-  , Pr
   -- The |Sesh| monad
   , Sesh
   , runSesh
@@ -97,42 +96,42 @@ type family Max (p :: Priority) (q :: Priority) :: Priority where
 
 
 -- |Computes the lower bound on the priority of a type.
-type family Pr (a :: Type) :: Priority
+-- type family Pr (a :: Type) :: Priority
 
 -- Instances for Sesh specific types.
-type instance Pr (Sesh t p q a) = p
-type instance Pr (Send t o a s) = 'Val o
-type instance Pr (Recv t o a s) = 'Val o
-type instance Pr (End  t o)     = 'Val o
+-- type instance Pr (Sesh t p q a) = p
+-- type instance Pr (Send t o a s) = 'Val o
+-- type instance Pr (Recv t o a s) = 'Val o
+-- type instance Pr (End  t o)     = 'Val o
 
 -- Instances for Linear Haskell specific types.
-type instance Pr (Ur a)         = Pr a
+-- type instance Pr (Ur a)         = Pr a
 
 -- Instances for built-in types.
-type instance Pr Bool           = 'Top
-type instance Pr Char           = 'Top
-type instance Pr Double         = 'Top
-type instance Pr Float          = 'Top
-type instance Pr Int            = 'Top
-type instance Pr Int8           = 'Top
-type instance Pr Int16          = 'Top
-type instance Pr Int32          = 'Top
-type instance Pr Int64          = 'Top
-type instance Pr Integer        = 'Top
-type instance Pr Natural        = 'Top
-type instance Pr Ordering       = 'Top
-type instance Pr Word           = 'Top
-type instance Pr Word8          = 'Top
-type instance Pr Word16         = 'Top
-type instance Pr Word32         = 'Top
-type instance Pr Word64         = 'Top
-type instance Pr ()             = 'Top
-type instance Pr Void           = 'Top
-type instance Pr [a]            = Pr a
-type instance Pr (Maybe a)      = Pr a
-type instance Pr (a -> b)       = Pr b
-type instance Pr (Either a b)   = Min (Pr a) (Pr b)
-type instance Pr (a, b)         = Min (Pr a) (Pr b)
+-- type instance Pr Bool           = 'Top
+-- type instance Pr Char           = 'Top
+-- type instance Pr Double         = 'Top
+-- type instance Pr Float          = 'Top
+-- type instance Pr Int            = 'Top
+-- type instance Pr Int8           = 'Top
+-- type instance Pr Int16          = 'Top
+-- type instance Pr Int32          = 'Top
+-- type instance Pr Int64          = 'Top
+-- type instance Pr Integer        = 'Top
+-- type instance Pr Natural        = 'Top
+-- type instance Pr Ordering       = 'Top
+-- type instance Pr Word           = 'Top
+-- type instance Pr Word8          = 'Top
+-- type instance Pr Word16         = 'Top
+-- type instance Pr Word32         = 'Top
+-- type instance Pr Word64         = 'Top
+-- type instance Pr ()             = 'Top
+-- type instance Pr Void           = 'Top
+-- type instance Pr [a]            = Pr a
+-- type instance Pr (Maybe a)      = Pr a
+-- type instance Pr (a -> b)       = Pr b
+-- type instance Pr (Either a b)   = Min (Pr a) (Pr b)
+-- type instance Pr (a, b)         = Min (Pr a) (Pr b)
 -- ...
 
 -- * Session types
@@ -191,18 +190,14 @@ newtype Sesh
 --
 -- NOTE: This operation is /unsafe/ and should not be exported.
 --
-unSesh :: Sesh t l u a %1 -> Linear.IO a
-unSesh (Sesh x) = x
+unsafeRunSesh :: Sesh t l u a %1 -> Linear.IO a
+unsafeRunSesh (Sesh x) = x
 
---
--- TODO: this should probably be modified to include (Pr a) as part of the lower
---       bound, in conjunction with the changes to Pr mentioned above
---
 ibind :: (q < p') =>
   (a %1 -> Sesh t p' q' b) %1 ->
   Sesh t p q a %1 ->
   Sesh t (Min p p') (Max q q') b
-ibind mf mx = Sesh $ unSesh mx >>= (unSesh . mf)
+ibind mf mx = Sesh $ unsafeRunSesh mx >>= (unsafeRunSesh . mf)
 
 infixr 1 =<<<
 infixl 1 >>>=
@@ -219,14 +214,14 @@ infixl 1 >>>=
   Sesh t (Min p p') (Max q q') b
 (>>>=) = flip ibind
 
-ireturn :: a %1 -> Sesh t (Pr a) 'Bot a
+ireturn :: a %1 -> Sesh t 'Top 'Bot a
 ireturn x = Sesh $ return x
+
+runSeshIO :: (forall t. Sesh t p q a) -> Linear.IO a
+runSeshIO mx = unsafeRunSesh mx
 
 runSesh :: (forall t. Sesh t p q a) -> a
 runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
-
-runSeshIO :: (forall t. Sesh t p q a) -> Linear.IO a
-runSeshIO mx = unSesh mx
 
 
 -- * Communication primitives
@@ -239,7 +234,7 @@ new = Sesh $ do
 
 -- |Spawn off the first argument as a new  thread.
 spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
-spawn mx = Sesh $ Raw.spawn (unSesh mx)
+spawn mx = Sesh $ Raw.spawn (unsafeRunSesh mx)
 
 -- |Send a value over a channel.
 send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
@@ -270,33 +265,23 @@ type Select t o s1 s2
 type Offer t o s1 s2
   = Recv t o (Either s1 s2) (End t (o + 1))
 
-selectLeft :: ( Session s1
-              , Session s2
-              , Pr s1 ~ Pr s2
-              , 'Bot < Pr s1
-              , 'Bot < Min ('Val o) (Pr s1)
-              , 'Val o < Pr s1) =>
+selectLeft :: (Session s1, Session s2) =>
   Select t o s1 s2 %1 ->
-  Sesh t (Min ('Val o) (Pr s1)) ('Val o) s1
-selectLeft s = do
+  Sesh t ('Val o) ('Val o) s1
+selectLeft s =
   new >>>= \(here, there) ->
-    send (Left there, s) >>>= \s ->
-    cancel s >>>= \() ->
-    ireturn here
+  send (Left there, s) >>>= \s ->
+  cancel s >>>= \() ->
+  ireturn here
 
-selectRight :: ( Session s1
-               , Session s2
-               , Pr s1 ~ Pr s2
-               , 'Bot < Pr s2
-               , 'Bot < Min ('Val o) (Pr s2)
-               , 'Val o < Pr s2) =>
+selectRight :: (Session s1, Session s2) =>
   Select t o s1 s2 %1 ->
-  Sesh t (Min ('Val o) (Pr s2)) ('Val o) s2
+  Sesh t ('Val o) ('Val o) s2
 selectRight s =
   new >>>= \(here, there) ->
-    send (Right there, s) >>>= \s ->
-    cancel s >>>= \() ->
-    ireturn here
+  send (Right there, s) >>>= \s ->
+  cancel s >>>= \() ->
+  ireturn here
 
 offerEither :: (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
   (Either s1 s2 %1 -> Sesh t p q a) %1 ->

@@ -76,6 +76,8 @@ instance Session RawEnd
     new = MkRawEnd <$> newSync
 \end{spec}
 
+Where |quiet| suppresses any |BlockedIndefinitelyOnMVar| errors.
+
 \begin{spec}
 send :: (a, RawSend a s) %1 -> Linear.IO s
 send (x, MkRawSend mvar_s) = do
@@ -93,8 +95,6 @@ cancel :: Session s => s %1 -> Linear.IO ()
 cancel s = return $ consume s
 \end{spec}
 
-Where |quiet| suppresses any |BlockedIndefinitelyOnMVar| errors.
-
 \begin{spec}
 connect ::  Session s => (s %1 -> Linear.IO ()) %1 ->
             (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
@@ -104,52 +104,50 @@ connect k1 k2 = do (s1, s2) <- new; spawn (k1 s1); k2 s2
 
 \subsection{Session-typed channels with priority}\label{sec:priority-sesh}
 
-Priorities are either |Bot|, a~natural number, or |Top|. We let |p| and |q| range over \emph{all} priorities, and |o| over natural numbers. A~priority |o| represents the time at which some action happens. Actions with lower priorities happen before actions with higher priorities. Actions always have natural number priorities. The values |Top| and |Bot| are used as the neutral elements in lower and upper priority bounds, respectively.
+Priorities are either |Bot|, a~natural number, or |Top|. A~natural number priority represents the time at which some action happens---the lower the number, the sooner it happens. The values |Top| and |Bot| are used as the identities for |`Min`| and |`Max`| in lower and upper bounds on priorities, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
 
 \begin{spec}
 data Priority = Bot | Val Nat | Top
 \end{spec}
 
-We define |Send o|, |Recv o|, and |End o|, which decorate the raw sessions from~\cref{sec:unsafe-sesh} with the priority |o| of the communication, \ie, when does the communication happen? Operationally, these types are mere wrappers.
+We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as usual.
 
-We define the |Sesh p q| monad, which decorates |Linear.IO| with a lower bound |p| and an upper bound |q| on the priorities its communications, \ie, if you run the monad, when does communication begin and end?
+We define |Send o|, |Recv o|, and |End o|, which decorate the raw sessions from~\cref{sec:unsafe-sesh} with the priority |o| of the communication action, \ie, when does the communication happen? Duality (|Dual|) preserves these priorities. Operationally, these types are mere wrappers.
+
+We define a graded monad |Sesh p q|, which decorates |Linear.IO| with a lower bound |p| and an upper bound |q| on the priorities of its communication actions, \ie, if you run the monad, when does communication begin and end?
 
 \begin{spec}
 newtype Sesh p q a = MkSesh { runSeshIO :: Linear.IO a }
 \end{spec}
 
-We define strict inequality ($|<|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as usual, and define an open type family (|Pr|) which returns a \emph{lower bound} on the priority for any type:
+The monad operations for |Sesh p q| merely wrap those for |Linear.IO|, hence trivially obeys the monad laws.
+
+The |ireturn| function returns a \emph{pure} computation---the type |Sesh Top Bot| guarantees that all communications happen between |Top| and |Bot|, hence there can be no communication at all!
 
 \begin{spec}
-type family Pr (a :: Type) :: Priority
-type instance Pr (Sesh p q a)  = p
-type instance Pr (Send o a s)  = Val o
-type instance Pr (Recv o a s)  = Val o
-type instance Pr (End o)       = Val o
-type instance Pr ()            = Top
-type instance Pr (a -> b)      = Pr b
-type instance Pr (Either a b)  = Min (Pr a) (Pr b)
-type instance Pr (a, b)        = Min (Pr a) (Pr b)
-{-"\dots"-}
+ireturn :: a %1 -> Sesh Top Bot a
+ireturn x = MkSesh $ return x
 \end{spec}
 
-The monad operations for |Sesh p q| merely wrap those for |Linear.IO|.
+The |>>>=| operator sequences two actions with types |Sesh p q| and |Sesh p' q'|, and requires |LT q p'|, \ie, the first action must have finished before the second starts. The resulting action has lower bound |Min p p'| and upper bound |Max q q'|.
 
 \begin{spec}
-ireturn :: a %1 -> Sesh (Pr a) Bot a
-ireturn x = MkSesh $ return x
-
-(>>>=) :: (q < p') => Sesh p q a %1 -> (a %1-> Sesh p' q' b) %1 -> Sesh (Min p p') (Max q q') b
+(>>>=) :: (LT q p') => Sesh p q a %1 -> (a %1-> Sesh p' q' b) %1 -> Sesh (Min p p') (Max q q') b
 mx >>>= mf = MkSesh $ runSeshIO mx >>= \x -> runSeshIO (mf x)
 \end{spec}
 
+We define similar wrappers for the concurrency and communication primitives:
+\begin{itemize*}[label=\empty]
+\item |send|, |recv|, and |close| each perform a communication action with some priority |o|, and return a computation of type |Sesh o o|, \ie, with \emph{exact} bounds;
+\item |new|, |spawn|, and |cancel| don't perform any communication action, and so return a \emph{pure} computation of type |Sesh Top Bot|.
+\end{itemize*}
 
 \begin{spec}
-new      :: Session s => Sesh Top Bot (s, Dual s)
-spawn    :: Sesh p q () %1 -> Sesh Top Bot ()
 send     :: Session s => (a, Send o a s) %1 -> Sesh (Val o) (Val o) s
 recv     :: Session s => Recv o a s %1 -> Sesh (Val o) (Val o) (a, s)
 close    :: End o %1 -> Sesh (Val o) (Val o) ()
+new      :: Session s => Sesh Top Bot (s, Dual s)
+spawn    :: Sesh p q () %1 -> Sesh Top Bot ()
 cancel   :: Session s => s %1 -> Sesh Top Bot ()
 \end{spec}
 
