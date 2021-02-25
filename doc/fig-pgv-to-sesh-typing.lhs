@@ -19,8 +19,8 @@
   }{\pgv{\seq{p}{{\bot}}{\ty{\Gamma}}{\lambda x.L}{\tylolli{p}{q}{T}{U}}}}
   \approx
   \inferrule*{
-    |ToSesh Gamma, x :: ToSesh T|\vdash|tosesh L :: Sesh (Min p (Pr (ToSesh T))) q (ToSesh U)|
-  }{|ireturn (\x -> tosesh L) :: Sesh (Min p (Pr (ToSesh T))) Bot (ToSesh T %1 -> Sesh (Min p (Pr (ToSesh T))) q (ToSesh U))|}
+    |ToSesh Gamma, x :: ToSesh T|\vdash|tosesh L :: Sesh (p `Min` Pr (ToSesh T)) q (ToSesh U)|
+  }{|ireturn (\x -> tosesh L) :: Sesh (p `Min` Pr (ToSesh T)) Bot (ToSesh T %1 -> Sesh (p `Min` Pr (ToSesh T)) q (ToSesh U))|}
   \\
 
   \inferrule*{
@@ -46,7 +46,7 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh T %1 -> Sesh p'' q'' (ToSesh U))|
     \sep
     |ToSesh Delta|\vdash|tosesh M :: Sesh p' q' (ToSesh T)|
-  }{|tosesh L >>>= \f -> tosesh M >>= \x -> f x :: (q < p', q' < p'') => Sesh (Min (Min p p') p'') (Max (Max q q') q'') (ToSesh U)|}
+  }{|tosesh L >>>= \f -> tosesh M >>= \x -> f x :: (q < p', q' < p'') => Sesh (p `Min` p' `Min` p'') (q `Max` q' `Max` q'') (ToSesh U)|}
   \\
 
   \inferrule*{
@@ -114,7 +114,7 @@
   \approx
   \inferrule*{
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh T)|
-  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Left x) :: (q < (Pr (ToSesh T))) => Sesh (Min p (Pr (ToSesh T))) q (Either (ToSesh T) (ToSesh U))|}
+  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Left x) :: (q < Pr (ToSesh T)) => Sesh (p `Min` Pr (ToSesh T)) q (Either (ToSesh T) (ToSesh U))|}
   \\
 
   \inferrule*{
@@ -126,7 +126,7 @@
   \approx
   \inferrule*{
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh U)|
-  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Right x) :: (q < (Pr (ToSesh U))) => Sesh (Min p (Pr (ToSesh U))) q (Either (ToSesh T) (ToSesh U))|}
+  }{|ToSesh Gamma|\vdash|tosesh L >>>= \x -> ireturn (Right x) :: (q < Pr (ToSesh U)) => Sesh (p `Min` Pr (ToSesh U)) q (Either (ToSesh T) (ToSesh U))|}
   \\
 
   \inferrule*{
