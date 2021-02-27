@@ -17,7 +17,7 @@ import           Control.Functor.Linear
 import qualified System.IO.Linear as Linear
 import qualified Unsafe.Linear as Unsafe
 
--- |Variant of |NonLinear.forkIO| which works on |Linear.IO|.
+-- |Variant of 'NonLinear.forkIO' for linear 'Linear.IO'.
 forkIO :: Linear.IO () %1 -> Linear.IO ThreadId
 forkIO = Linear.fromSystemIO . linForkIO . toSystemIO
   where
