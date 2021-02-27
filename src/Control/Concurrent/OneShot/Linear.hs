@@ -4,19 +4,22 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Control.Concurrent.OneShot.Linear
+  -- One-shot channels
   ( SendOnce
   , RecvOnce
-  , SyncOnce
   , new
-  , newSync
   , send
   , recv
+  -- One-shot synchronisation
+  , SyncOnce
+  , newSync
   , sync
   ) where
 
 import           Prelude.Linear
+import           Control.Concurrent.Linear
 import           Control.Concurrent.MVar.Linear
-import           Control.Monad.Linear
+import           Control.Functor.Linear
 import           Data.Bifunctor.Linear (bimap)
 import           Data.Proxy
 import           Data.Unrestricted.Linear

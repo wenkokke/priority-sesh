@@ -7,13 +7,13 @@
 
 module Control.Concurrent.Session.Raw.Linear.Test where
 
-import           Test.HUnit
-import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
+import           Control.Concurrent.Session.Raw.Linear
+import           Control.Functor.Linear
 import qualified Prelude
 import           Prelude.Linear hiding (Dual)
-import           Control.Concurrent.Session.Raw.Linear
-import           Control.Monad.Linear
 import qualified System.IO.Linear as Linear
+import           Test.HUnit
+import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
 import qualified Unsafe.Linear as Unsafe
 
 -- * Ping

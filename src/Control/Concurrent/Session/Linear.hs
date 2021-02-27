@@ -48,14 +48,13 @@ module Control.Concurrent.Session.Linear
   ) where
 
 import           Prelude.Linear hiding (Max, Min, Dual)
+import           Control.Concurrent.Linear
 import qualified Control.Concurrent.Session.Raw.Linear as Raw
-import           Control.Monad.Linear
-import           Data.Int (Int8, Int16, Int32, Int64)
+import           Control.Functor.Linear
+import           Data.Bifunctor.Linear
+import           Data.Functor.Linear (void)
 import           Data.Kind (Type)
-import           Numeric.Natural (Natural)
 import           Data.Type.Equality (type (==))
-import           Data.Void (Void)
-import           Data.Word (Word8, Word16, Word32, Word64)
 import           GHC.TypeLits (Nat, CmpNat, type (+))
 import qualified GHC.TypeLits as Nat
 import qualified GHC.TypeLits.Extra as Nat
@@ -94,45 +93,6 @@ type family Max (p :: Priority) (q :: Priority) :: Priority where
   Max p        'Top     = 'Top
   Max 'Top     q        = 'Bot
 
-
--- |Computes the lower bound on the priority of a type.
--- type family Pr (a :: Type) :: Priority
-
--- Instances for Sesh specific types.
--- type instance Pr (Sesh t p q a) = p
--- type instance Pr (Send t o a s) = 'Val o
--- type instance Pr (Recv t o a s) = 'Val o
--- type instance Pr (End  t o)     = 'Val o
-
--- Instances for Linear Haskell specific types.
--- type instance Pr (Ur a)         = Pr a
-
--- Instances for built-in types.
--- type instance Pr Bool           = 'Top
--- type instance Pr Char           = 'Top
--- type instance Pr Double         = 'Top
--- type instance Pr Float          = 'Top
--- type instance Pr Int            = 'Top
--- type instance Pr Int8           = 'Top
--- type instance Pr Int16          = 'Top
--- type instance Pr Int32          = 'Top
--- type instance Pr Int64          = 'Top
--- type instance Pr Integer        = 'Top
--- type instance Pr Natural        = 'Top
--- type instance Pr Ordering       = 'Top
--- type instance Pr Word           = 'Top
--- type instance Pr Word8          = 'Top
--- type instance Pr Word16         = 'Top
--- type instance Pr Word32         = 'Top
--- type instance Pr Word64         = 'Top
--- type instance Pr ()             = 'Top
--- type instance Pr Void           = 'Top
--- type instance Pr [a]            = Pr a
--- type instance Pr (Maybe a)      = Pr a
--- type instance Pr (a -> b)       = Pr b
--- type instance Pr (Either a b)   = Min (Pr a) (Pr b)
--- type instance Pr (a, b)         = Min (Pr a) (Pr b)
--- ...
 
 -- * Session types
 
@@ -228,13 +188,11 @@ runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 
 -- |Create a new channel with two dual endpoints.
 new :: Session s => Sesh t 'Top 'Bot (s, Dual s)
-new = Sesh $ do
-  (here, there) <- Raw.new
-  return (fromRaw here, fromRaw there)
+new = Sesh $ bimap fromRaw fromRaw <$> Raw.new
 
 -- |Spawn off the first argument as a new  thread.
 spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
-spawn mx = Sesh $ Raw.spawn (unsafeRunSesh mx)
+spawn = Sesh . void . forkIO . unsafeRunSesh
 
 -- |Send a value over a channel.
 send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s

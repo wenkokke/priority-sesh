@@ -17,7 +17,6 @@ module Control.Concurrent.Session.Raw.Linear
   , End
   , Session (Dual, new)
   -- Communication primitives
-  , spawn
   , send
   , recv
   , close
@@ -35,8 +34,9 @@ import           Prelude.Linear hiding (Dual, IO)
 import           Control.Exception
 import           Control.Concurrent.Linear
 import qualified Control.Concurrent.OneShot.Linear as OneShot
-import           Control.Monad.Linear
+import           Control.Functor.Linear
 import           Data.Bifunctor.Linear
+import           Data.Functor.Linear (void)
 import           Data.Kind (Type)
 import           Data.Unrestricted.Linear
 import qualified System.IO.Linear as Linear
@@ -60,12 +60,12 @@ class (Session (Dual s), Dual (Dual s) ~ s) => Session s where
 instance Session s => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
   new = bimap Send Recv <$> OneShot.new
-  cancel (Send chan_s) = return (consume chan_s)
+  cancel (Send ch_s) = return (consume ch_s)
 
 instance Session s => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
   new = bimap Recv Send . swap <$> OneShot.new
-  cancel (Recv chan_r) = return (consume chan_r)
+  cancel (Recv ch_r) = return (consume ch_r)
 
 instance Session End where
   type Dual End = End
@@ -80,23 +80,20 @@ instance Session () where
 
 -- * Communication primitives
 
-spawn :: Linear.IO () %1 -> Linear.IO ()
-spawn k = consume <$> forkLinearIO k
-
 send :: (a, Send a s) %1 -> Linear.IO s
-send (x, Send chan_s) = do
+send (x, Send ch_s) = do
   (here, there) <- new
-  OneShot.send chan_s (x, there)
+  OneShot.send ch_s (x, there)
   return here
 
 recv :: Recv a s %1 -> Linear.IO (a, s)
-recv (Recv chan_r) = OneShot.recv chan_r
+recv (Recv ch_r) = OneShot.recv ch_r
 
 close :: End %1 -> Linear.IO ()
 close (End sync) = OneShot.sync sync
 
 connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
-connect k1 k2 = do (s1, s2) <- new; spawn (k1 s1); k2 s2
+connect k1 k2 = do (s1, s2) <- new; void $ forkIO (k1 s1); k2 s2
 
 
 -- * Binary choice
