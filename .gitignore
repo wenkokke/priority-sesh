@@ -2,6 +2,7 @@
 
 *.pdf
 doc/main.tex
+doc/introduction.tex
 doc/pgv.tex
 doc/sesh.tex
 doc/fig-pgv-to-sesh.tex

@@ -12,6 +12,8 @@
 %
 %format SendOnce     = "\ty{\Conid{Send}_1}"
 %format RecvOnce     = "\ty{\Conid{Recv}_1}"
+%format MkSendOnce   = "\tm{\Conid{Send}_1}"
+%format MkRecvOnce   = "\tm{\Conid{Recv}_1}"
 %format newOneShot   = "\tm{\Varid{new}_1}"
 %format sendOnce     = "\tm{\Varid{send}_1}"
 %format recvOnce     = "\tm{\Varid{recv}_1}"

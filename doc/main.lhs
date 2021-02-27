@@ -1,4 +1,6 @@
 \documentclass[sigplan,screen]{acmart}
+\bibliographystyle{ACM-Reference-Format}
+\citestyle{acmauthoryear}
 
 \let\Bbbk\undefined % acmart conflicts with lhs2TeX
 %include polycode.fmt
@@ -8,6 +10,8 @@
 \input{preamble}
 \input{preamble/pgv}
 \input{preamble/sesh}
+
+
 \begin{document}
 
 \title{Session Types with Priority in Linear Haskell}
@@ -52,7 +56,11 @@
 
 \maketitle
 
+%include introduction.lhs
 %include sesh.lhs
 %include pgv.lhs
+
+\clearpage
+\bibliography{main}
 
 \end{document}

@@ -2,7 +2,11 @@
 %include linear.fmt
 %include main.fmt
 
-\section{What is Priority Sesh?}\label{sec:sesh}
+\section{What is Priority Sesh?}\label{sec:main}
+
+We introduce Priority Sesh in three steps: in~\cref{sec:one-shot}, we build a small library of \emph{linear} or \emph{one-shot channels} based on MVars~\cite{peytonjonesgordon96}; in~\cref{sec:sesh}, we use these one-shot channels to build a small library of \emph{session-typed channels} \cite{dardhgiachino12}; and in~\cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
+
+Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://github.com/tweag/linear-base/}} (\eg, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|). For clarity, we refer to the linear |IO| monad from \texttt{linear-base} as |Linear.IO|.
 
 We colour the Haskell definitions which are a part of Sesh:
 \begin{itemize*}[font=\bfseries]
@@ -13,21 +17,38 @@ We colour the Haskell definitions which are a part of Sesh:
 
 \subsection{One-shot channels}\label{sec:one-shot}
 
+We start by building a small library of \emph{linear} or \emph{one-shot channels}, \ie, channels over which a value must be sent or received \emph{exactly once}.
+
+The one-shot channels are at the core of our library, and their efficiency is crucial to the overall efficiency of Priority Sesh. However, we do not aim to present an efficient implementation here. Rather, we aim to present a compact implementation with the correct behaviour.
+
+\paragraph{Channels}
+A~one-shot channel has two endpoints, |SendOnce| and |RecvOnce|, which are two copies of the same |MVar|:
+
 \begin{spec}
-type SendOnce  a = MVar a
-type RecvOnce  a = MVar a
+newtype SendOnce  a = MkSendOnce (MVar a)
+newtype RecvOnce  a = MkRecvOnce (MVar a)
+
+newOneShot :: Linear.IO (SendOnce a, RecvOnce a)
+newOneShot = do  (mvar_s, mvar_r) <- dup2 <$> newEmptyMVar
+                 return (MkSendOnce (unur mvar_s), MkRecvOnce (unur mvar_r))
 \end{spec}
 
-\begin{spec}
-newOneShot :: Linear.IO (SendOnce a, RecvOnce a)
-newOneShot = bimap unur unur . dup2 <$> newEmptyMVar
+The |newEmptyMVar| function returns an \emph{unrestricted} |MVar|, which may be used non-linearly. The |dup2| function creates two (unrestricted) copies of the |MVar|. The |unur| function casts each \emph{unrestricted} copy to a \emph{linear} copy. Thus, we end up with two copies of an |MVar|, each of which must be used \emph{exactly once}.
 
+We implement |sendOnce| and |recvOnce| as aliases for the corresponding |MVar| operations:
+
+\begin{spec}
 sendOnce :: SendOnce a %1 -> a %1 -> Linear.IO ()
-sendOnce mvar x = putMVar mvar x
+sendOnce (MkSendOnce mvar_s) x = putMVar mvar_s x
 
 recvOnce :: RecvOnce a %1 -> Linear.IO a
-recvOnce mvar = takeMVar mvar
+recvOnce (MkRecvOnce mvar_r)= takeMVar mvar_r
 \end{spec}
+
+The |MVar| operations implement the correct blocking behaviour for asynchronous one-shot channels: the |sendOnce| operation is non-blocking, and the |recvOnce| operations blocks until a value becomes available.
+
+\paragraph{Synchronisation}
+We use |SendOnce| and |RecvOnce| to implement a construct for one-shot synchronisation between two processes, |SyncOnce|, which consists of two one-shot channels. To synchronise, each process sends a unit on the one channel, then waits to receive a unit on the other channel:
 
 \begin{spec}
 type SyncOnce = (SendOnce (), RecvOnce ())
@@ -42,7 +63,10 @@ syncOnce (mvar_s, mvar_r) = do sendOnce mvar_s (); recvOnce mvar_r
 \end{spec}
 
 
-\subsection{Session-typed channels}\label{sec:unsafe-sesh}
+\paragraph{Cancellation}
+
+
+\subsection{Session-typed channels}\label{sec:sesh}
 
 \begin{spec}
 class (Session (Dual s) , Dual (Dual s) ~ s) => Session s
@@ -112,7 +136,7 @@ data Priority = Bot | Val Nat | Top
 
 We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as usual.
 
-We define |Send o|, |Recv o|, and |End o|, which decorate the raw sessions from~\cref{sec:unsafe-sesh} with the priority |o| of the communication action, \ie, when does the communication happen? Duality (|Dual|) preserves these priorities. Operationally, these types are mere wrappers.
+We define |Send o|, |Recv o|, and |End o|, which decorate the raw sessions from~\cref{sec:sesh} with the priority |o| of the communication action, \ie, when does the communication happen? Duality (|Dual|) preserves these priorities. Operationally, these types are mere wrappers.
 
 We define a graded monad |Sesh p q|, which decorates |Linear.IO| with a lower bound |p| and an upper bound |q| on the priorities of its communication actions, \ie, if you run the monad, when does communication begin and end?
 
