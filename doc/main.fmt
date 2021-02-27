@@ -18,6 +18,7 @@
 %format sendOnce     = "\tm{\Varid{send}_1}"
 %format recvOnce     = "\tm{\Varid{recv}_1}"
 %format SyncOnce     = "\ty{\Conid{Sync}_1}"
+%format MkSyncOnce   = "\tm{\Conid{Sync}_1}"
 %format newSync      = "\tm{\Varid{newSync}_1}"
 %format syncOnce     = "\tm{\Varid{sync}_1}"
 %format mvar_s       = mvar "_{s}"
@@ -26,14 +27,12 @@
 %format mvar_r1      = mvar "_{r1}"
 %format mvar_s2      = mvar "_{s2}"
 %format mvar_r2      = mvar "_{r2}"
-%format chan_s       = chan "_{s}"
-%format chan_r       = chan "_{r}"
-%format chan_s1      = chan "_{s1}"
-%format chan_r1      = chan "_{r1}"
-%format chan_s2      = chan "_{s2}"
-%format chan_r2      = chan "_{r2}"
-%format consume_s    = consume "_{s}"
-%format consume_r    = consume "_{r}"
+%format ch_s       = ch "_{s}"
+%format ch_r       = ch "_{r}"
+%format ch_s1      = ch "_{s1}"
+%format ch_r1      = ch "_{r1}"
+%format ch_s2      = ch "_{s2}"
+%format ch_r2      = ch "_{r2}"
 %
 %%% Sesh
 %

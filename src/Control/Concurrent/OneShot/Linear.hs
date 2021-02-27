@@ -47,18 +47,16 @@ instance Consumable (RecvOnce a) where
 
 -- * Synchronisation construct
 
-newtype SyncOnce = SyncOnce (SendOnce (), RecvOnce ())
+data SyncOnce = SyncOnce (SendOnce ()) (RecvOnce ())
 
 newSync :: Linear.IO (SyncOnce, SyncOnce)
 newSync = do
-  (mvar_s1, mvar_r1) <- new
-  (mvar_s2, mvar_r2) <- new
-  return (SyncOnce (mvar_s1, mvar_r2), SyncOnce (mvar_s2, mvar_r1))
+  (ch_s1, ch_r1) <- new
+  (ch_s2, ch_r2) <- new
+  return (SyncOnce ch_s1 ch_r2, SyncOnce ch_s2 ch_r1)
 
 sync :: SyncOnce %1 -> Linear.IO ()
-sync (SyncOnce (mvar_s, mvar_r)) = do
-  send mvar_s ()
-  recv mvar_r
+sync (SyncOnce ch_s ch_r) = do send ch_s (); recv ch_r
 
 instance Consumable SyncOnce where
-  consume (SyncOnce (mvar_s, mvar_r)) = consume (mvar_s, mvar_r)
+  consume (SyncOnce ch_s ch_r) = consume (ch_s, ch_r)
