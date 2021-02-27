@@ -21,6 +21,7 @@ We start by building a small library of \emph{linear} or \emph{one-shot channels
 
 The one-shot channels are at the core of our library, and their efficiency is crucial to the overall efficiency of Priority Sesh. However, we do not aim to present an efficient implementation here. Rather, we aim to present a compact implementation with the correct behaviour.
 
+
 \paragraph{Channels}
 A~one-shot channel has two endpoints, |SendOnce| and |RecvOnce|, which are two copies of the same |MVar|:
 
@@ -47,6 +48,7 @@ recvOnce (MkRecvOnce mvar_r)= takeMVar mvar_r
 
 The |MVar| operations implement the correct blocking behaviour for asynchronous one-shot channels: the |sendOnce| operation is non-blocking, and the |recvOnce| operations blocks until a value becomes available.
 
+
 \paragraph{Synchronisation}
 We use |SendOnce| and |RecvOnce| to implement a construct for one-shot synchronisation between two processes, |SyncOnce|, which consists of two one-shot channels. To synchronise, each process sends a unit on the one channel, then waits to receive a unit on the other channel:
 
@@ -64,6 +66,7 @@ syncOnce (mvar_s, mvar_r) = do sendOnce mvar_s (); recvOnce mvar_r
 
 
 \paragraph{Cancellation}
+One-shot channels are created in the |IO| monad, so it is impossible to drop them \emph{implicitly}. Simply \emph{forgetting} to use a channel results in a complaint from the type-checker. However, it is possible to \emph{explicity} drop a channel!
 
 
 \subsection{Session-typed channels}\label{sec:sesh}

@@ -52,30 +52,25 @@ data End      = End OneShot.SyncOnce
 
 -- * Duality and session initiation
 
-instance Consumable (Send a s) where
-  consume = Unsafe.toLinear $ \_s -> ()
-
-instance Consumable (Recv a s) where
-  consume = Unsafe.toLinear $ \_s -> ()
-
-instance Consumable End where
-  consume = Unsafe.toLinear $ \_s -> ()
-
-class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
+class (Session (Dual s), Dual (Dual s) ~ s) => Session s where
   type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
+  cancel :: s %1 -> Linear.IO ()
 
 instance Session s => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
   new = bimap Send Recv <$> OneShot.new
+  cancel (Send chan_s) = return (consume chan_s)
 
 instance Session s => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
   new = bimap Recv Send . swap <$> OneShot.new
+  cancel (Recv chan_r) = return (consume chan_r)
 
 instance Session End where
   type Dual End = End
   new = bimap End End <$> OneShot.newSync
+  cancel (End sync) = return (consume sync)
 
 -- * Communication primitives
 
@@ -93,9 +88,6 @@ recv (Recv chan_r) = OneShot.recv chan_r
 
 close :: End %1 -> Linear.IO ()
 close (End sync) = quiet $ OneShot.sync sync
-
-cancel :: Session s => s %1 -> Linear.IO ()
-cancel s = return $ consume s
 
 connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
 connect k1 k2 = do (s1, s2) <- new; spawn (k1 s1); k2 s2

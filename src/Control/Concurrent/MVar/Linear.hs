@@ -23,3 +23,6 @@ takeMVar mvar =
 putMVar :: MVar a %1-> a %1-> Linear.IO ()
 putMVar mvar x =
   Linear.fromSystemIO (Unsafe.toLinear2 MVar.putMVar mvar x)
+
+instance Consumable (MVar a) where
+  consume = Unsafe.toLinear (\_mvar -> ())

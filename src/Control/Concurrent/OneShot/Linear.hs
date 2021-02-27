@@ -24,7 +24,6 @@ import qualified System.IO.Linear as Linear
 import qualified Unsafe.Linear as Unsafe
 
 
-
 -- * One-shot channels
 
 newtype SendOnce a = SendOnce (MVar a)
@@ -39,18 +38,27 @@ send (SendOnce mvar) x = putMVar mvar x
 recv :: RecvOnce a %1 -> Linear.IO a
 recv (RecvOnce mvar) = takeMVar mvar
 
+instance Consumable (SendOnce a) where
+  consume (SendOnce mvar) = consume mvar
+
+instance Consumable (RecvOnce a) where
+  consume (RecvOnce mvar) = consume mvar
+
 
 -- * Synchronisation construct
 
-newtype SyncOnce   = SyncOnce (SendOnce (), RecvOnce ())
+newtype SyncOnce = SyncOnce (SendOnce (), RecvOnce ())
 
 newSync :: Linear.IO (SyncOnce, SyncOnce)
 newSync = do
-  (chan_s1, chan_r1) <- new
-  (chan_s2, chan_r2) <- new
-  return (SyncOnce (chan_s1, chan_r2), SyncOnce (chan_s2, chan_r1))
+  (mvar_s1, mvar_r1) <- new
+  (mvar_s2, mvar_r2) <- new
+  return (SyncOnce (mvar_s1, mvar_r2), SyncOnce (mvar_s2, mvar_r1))
 
 sync :: SyncOnce %1 -> Linear.IO ()
-sync (SyncOnce (chan_s, chan_r)) = do
-  send chan_s ()
-  recv chan_r
+sync (SyncOnce (mvar_s, mvar_r)) = do
+  send mvar_s ()
+  recv mvar_r
+
+instance Consumable SyncOnce where
+  consume (SyncOnce (mvar_s, mvar_r)) = consume (mvar_s, mvar_r)
