@@ -15,13 +15,9 @@
 module Control.Concurrent.Session.Linear.Test where
 
 import           Control.Concurrent.Session.Linear as Session
-import           Data.Void (Void)
-import qualified Prelude
-import           Prelude.Linear hiding (Min, Max, Dual, Monad(..))
-import qualified System.IO.Linear as Linear
+import           Prelude.Linear hiding (Min, Max, Dual)
 import           Test.HUnit
 import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
-import qualified Unsafe.Linear as Unsafe
 
 
 -- * Rebind do-notation to Sesh "monad"
@@ -50,7 +46,6 @@ return = Session.ireturn
 pingWorks :: Test
 pingWorks = TestLabel "ping" $ TestCase (assert (runSeshIO ping))
   where
-    ping :: Sesh t _ _ (Ur ())
     ping = do
       (s1, s2) <- new
       spawn $ do
@@ -58,7 +53,6 @@ pingWorks = TestLabel "ping" $ TestCase (assert (runSeshIO ping))
         close @1 s1
       ((), s2) <- recv s2
       close s2
-      return $ Ur ()
 
 
 -- * Calculator
@@ -88,7 +82,7 @@ calcWorks = TestLabel "calc" $ TestList
                                                  close s)
 
     -- Server offers calcuator, client chooses (negate 42).
-    neg :: Sesh t _ _ (Ur Bool)
+    neg :: Sesh t _ _ Bool
     neg = do
       (s, s') <- new
       spawn (calcServer s')
@@ -96,10 +90,10 @@ calcWorks = TestLabel "calc" $ TestList
       s <- send (42, s)
       (x, s) <- recv s
       close s
-      return $ move (x == -42)
+      return $ x == -42
 
     -- Server offers calculator, client chooses 4 + 5.
-    add :: Sesh t _ _ (Ur Bool)
+    add :: Sesh t _ _ Bool
     add = do
       (s, s') <- new
       spawn (calcServer s')
@@ -108,7 +102,7 @@ calcWorks = TestLabel "calc" $ TestList
       s <- send (5, s)
       (x, s) <- recv s
       close s
-      return $ move (x == 9)
+      return $ x == 9
 
 
 -- * Cancellation
@@ -116,34 +110,30 @@ calcWorks = TestLabel "calc" $ TestList
 -- |Test the interaction of cancel with send and receive.
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar (runSeshIO cancelRecv))
+  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() (runSeshIO cancelRecv))
   , TestLabel "send" $ TestCase (assert (runSeshIO cancelSend))
   ]
   where
     -- Server cancels, client tries to receive.
-    cancelRecv :: Sesh t _ _ (Ur ())
     cancelRecv = do
       (s, s') <- new
       spawn (cancel s')
       ((), s) <- recv @0 s
       close @1 s
-      return $ Ur ()
 
     -- Server cancels, client tries to send.
-    cancelSend :: Sesh t _ _ (Ur ())
     cancelSend = do
       (s, s') <- new
       spawn (cancel s')
       s <- send @0 ((), s)
       close @1 s
-      return $ Ur ()
 
 -- * Deadlock (does not compile)
 
 -- deadlockFails :: Test
 -- deadlockFails = TestLabel "deadlock" $ TestCase (assert (runSeshIO deadlock))
 --   where
---     deadlock :: Sesh t 'Top ('Val 3) (Ur ())
+--     deadlock :: Sesh t 'Top ('Val 3) ()
 --     deadlock = do
 --       (s1, r1) <- new
 --       (s2, r2) <- new
@@ -155,7 +145,6 @@ cancelWorks = TestLabel "cancel" $ TestList
 --       close @3 r2
 --       s1 <- send @0 ((), s1)
 --       close @1 s1
---       return $ Ur ()
 
 -- -}
 -- -}

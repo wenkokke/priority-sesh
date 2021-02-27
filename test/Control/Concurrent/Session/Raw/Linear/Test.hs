@@ -1,7 +1,9 @@
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE LinearTypes         #-}
 {-# LANGUAGE RebindableSyntax    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 
 module Control.Concurrent.Session.Raw.Linear.Test where
 
@@ -23,7 +25,6 @@ type Pong = Dual Ping
 pingWorks :: Test
 pingWorks = TestLabel "ping" $ TestCase (assert ping)
   where
-    ping :: Linear.IO (Ur ())
     ping = do
       connect
         (\s -> do
@@ -34,7 +35,6 @@ pingWorks = TestLabel "ping" $ TestCase (assert ping)
             ((), s) <- recv s
             close s
         )
-      return $ Ur ()
 
 
 -- * Calculator
@@ -100,7 +100,7 @@ calcWorks = TestLabel "calc" $ TestList
 -- |Test the interaction of cancel with send and receive.
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar cancelRecv)
+  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() cancelRecv)
   , TestLabel "send" $ TestCase (assert cancelSend)
   ]
   where
@@ -111,7 +111,6 @@ cancelWorks = TestLabel "cancel" $ TestList
             ((), s) <- recv s
             close s
         )
-      return $ Ur ()
 
     -- Server cancels, client tries to send.
     cancelSend = do
@@ -120,4 +119,3 @@ cancelWorks = TestLabel "cancel" $ TestList
             s <- send ((), s)
             close s
         )
-      return $ Ur ()
