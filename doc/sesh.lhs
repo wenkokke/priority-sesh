@@ -66,7 +66,9 @@ syncOnce (mvar_s, mvar_r) = do sendOnce mvar_s (); recvOnce mvar_r
 
 
 \paragraph{Cancellation}
-One-shot channels are created in the |IO| monad, so it is impossible to drop them \emph{implicitly}. Simply \emph{forgetting} to use a channel results in a complaint from the type-checker. However, it is possible to \emph{explicity} drop a channel!
+One-shot channels are created in the linear |IO| monad, so \emph{forgetting} to use a channel results in a complaint from the type-checker. However, it is possible to \emph{explicitly} drop values whose types implement the |Consumable| class, using |consume :: a %1 -> ()|.
+
+One-shot channels implement |Consumable| by simply dropping their |MVar|s. The Haskell runtime throws an exception when a ``thread is blocked on an |MVar|, but there are no other references to the |MVar| so it can't ever continue''\footnote{\url{https://downloads.haskell.org/~ghc/9.0.1/docs/html/libraries/base-4.15.0.0/Control-Exception.html\#t:BlockedIndefinitelyOnMVar}}.
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
@@ -117,10 +119,9 @@ recv (MkRawRecv mvar_r) = recvOnce mvar_r
 
 close :: RawEnd %1 -> Linear.IO ()
 close (MkRawEnd sync) = quiet $ syncOnce sync
-
-cancel :: Session s => s %1 -> Linear.IO ()
-cancel s = return $ consume s
 \end{spec}
+
+TODO: |cancel| calls |consume|, but channels do not implement consumable to avoid implicit dropping of channels due to desugaring of do-notation
 
 \begin{spec}
 connect ::  Session s => (s %1 -> Linear.IO ()) %1 ->

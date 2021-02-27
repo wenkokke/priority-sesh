@@ -43,6 +43,7 @@ test-suite test-priority-sesh
     Test.hs
   other-modules:
     Test.HUnit.Linear
+    Control.Concurrent.OneShot.Linear.Test
     Control.Concurrent.Session.Linear.Test
     Control.Concurrent.Session.Raw.Linear.Test
   hs-source-dirs:      
