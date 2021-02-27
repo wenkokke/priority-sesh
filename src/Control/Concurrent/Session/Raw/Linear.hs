@@ -72,6 +72,12 @@ instance Session End where
   new = bimap End End <$> OneShot.newSync
   cancel (End sync) = return (consume sync)
 
+instance Session () where
+  type Dual () = ()
+  new = return ((), ())
+  cancel () = return ()
+
+
 -- * Communication primitives
 
 spawn :: Linear.IO () %1 -> Linear.IO ()

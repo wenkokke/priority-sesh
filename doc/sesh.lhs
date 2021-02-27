@@ -77,13 +77,13 @@ Where |spawn| spawns off a new thread using a linear |forkIO|.
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
-We use the one-shot channels to build a small library of \emph{session-typed channels}.
+Let's look at a simple example of a session-typed channel---a multiplication service.
 \begin{spec}
 type MulServer = RawRecv Int (RawRecv Int (RawSend Int RawEnd))
 \end{spec}
+
 \begin{center}
-\vspace*{-0.75\baselineskip}
-\begin{minipage}{0.5\linewidth}
+\begin{minipage}{0.475\linewidth}
 \begin{spec}
 mulServer (s :: MulServer)
   = do  (x, s) <- recv s
@@ -93,7 +93,7 @@ mulServer (s :: MulServer)
         return ()
 \end{spec}
 \end{minipage}%
-\begin{minipage}{0.5\linewidth}
+\begin{minipage}{0.525\linewidth}
 \begin{spec}
 mulClient (s :: Dual MulServer)
   = do  s <- send (32, s)
@@ -102,8 +102,9 @@ mulClient (s :: Dual MulServer)
         close s
         return z
 \end{spec}
-\end{minipage}
+\end{minipage}%
 \end{center}
+We use the one-shot channels to build a small library of \emph{session-typed channels}.
 
 First, we define the |Session| class. A~session type must have a |Dual|, which must itself be a session type. Duality must be an \emph{injective} and \emph{involutive} function. Finally, |new| creates a session-typed channel.
 \begin{spec}
@@ -133,7 +134,7 @@ instance Session s => Session (RawRecv a s)
 instance Session RawEnd
   where
     type Dual RawEnd = RawEnd
-    new = MkRawEnd <$> newSync
+    new = bimap MkRawEnd MkRawEnd <$> newSync
 \end{spec}
 
 \begin{spec}
