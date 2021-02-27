@@ -117,5 +117,5 @@ cancelWorks = TestLabel "cancel" $ TestList
       connect cancel
         (\s -> do
             s <- send ((), s)
-            close s
+            cancel (s :: End) -- close tries to sync
         )

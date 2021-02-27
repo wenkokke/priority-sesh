@@ -117,16 +117,16 @@ cancelWorks = TestLabel "cancel" $ TestList
     -- Server cancels, client tries to receive.
     cancelRecv = do
       (s, s') <- new
-      spawn (cancel s')
+      spawn $ cancel s'
       ((), s) <- recv @0 s
       close @1 s
 
     -- Server cancels, client tries to send.
     cancelSend = do
       (s, s') <- new
-      spawn (cancel s')
+      spawn $ cancel s'
       s <- send @0 ((), s)
-      close @1 s
+      cancel (s :: End _ 1) -- close tries to sync
 
 -- * Deadlock (does not compile)
 

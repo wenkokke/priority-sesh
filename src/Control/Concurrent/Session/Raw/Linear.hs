@@ -80,24 +80,17 @@ spawn k = consume <$> forkLinearIO k
 send :: (a, Send a s) %1 -> Linear.IO s
 send (x, Send chan_s) = do
   (here, there) <- new
-  () <- quiet $ OneShot.send chan_s (x, there)
+  OneShot.send chan_s (x, there)
   return here
 
 recv :: Recv a s %1 -> Linear.IO (a, s)
 recv (Recv chan_r) = OneShot.recv chan_r
 
 close :: End %1 -> Linear.IO ()
-close (End sync) = quiet $ OneShot.sync sync
+close (End sync) = OneShot.sync sync
 
 connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
 connect k1 k2 = do (s1, s2) <- new; spawn (k1 s1); k2 s2
-
--- |Suppress |BlockedIndefinitelyOnMVar| exceptions.
-quiet :: Linear.IO () %1 -> Linear.IO ()
-quiet x = do
-  unur <$> Unsafe.toLinear2 Linear.catch
-    (do x; return $ Ur ())
-    (\BlockedIndefinitelyOnMVar -> return $ Ur ())
 
 
 -- * Binary choice

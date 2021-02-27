@@ -56,19 +56,30 @@ We use |SendOnce| and |RecvOnce| to implement a construct for one-shot synchroni
 type SyncOnce = (SendOnce (), RecvOnce ())
 
 newSync :: Linear.IO (SyncOnce, SyncOnce)
-newSync = do  (mvar_s1, mvar_r1) <- newOneShot
-              (mvar_s2, mvar_r2) <- newOneShot
-              return ((mvar_s1, mvar_r2), (mvar_s2, mvar_r1))
+newSync = do  (chan_s1, chan_r1) <- newOneShot
+              (chan_s2, chan_r2) <- newOneShot
+              return ((chan_s1, chan_r2), (chan_s2, chan_r1))
 
 syncOnce :: SyncOnce %1 -> Linear.IO ()
-syncOnce (mvar_s, mvar_r) = do sendOnce mvar_s (); recvOnce mvar_r
+syncOnce (chan_s, chan_r) = do sendOnce chan_s (); recvOnce chan_r
 \end{spec}
 
 
 \paragraph{Cancellation}
 One-shot channels are created in the linear |IO| monad, so \emph{forgetting} to use a channel results in a complaint from the type-checker. However, it is possible to \emph{explicitly} drop values whose types implement the |Consumable| class, using |consume :: a %1 -> ()|.
 
-One-shot channels implement |Consumable| by simply dropping their |MVar|s. The Haskell runtime throws an exception when a ``thread is blocked on an |MVar|, but there are no other references to the |MVar| so it can't ever continue''\footnote{\url{https://downloads.haskell.org/~ghc/9.0.1/docs/html/libraries/base-4.15.0.0/Control-Exception.html\#t:BlockedIndefinitelyOnMVar}}.
+One-shot channels implement |Consumable| by simply dropping their |MVar|s. The Haskell runtime throws an exception when a ``thread is blocked on an |MVar|, but there are no other references to the |MVar| so it can't ever continue.''\footnote{\url{https://downloads.haskell.org/~ghc/9.0.1/docs/html/libraries/base-4.15.0.0/Control-Exception.html\#t:BlockedIndefinitelyOnMVar}} Practically, |consumeSend| throws a |BlockedIndefinitelyOnMVar| exception, whereas |consumeRecv| does not:
+
+\begin{spec}
+consumeSend = do  (chan_s, chan_r) <- new
+                  spawn $ return (consume chan_s)
+                  recv chan_r
+
+consumeRecv = do  (chan_s, chan_r) <- new
+                  spawn $ return (consume chan_r)
+                  send chan_s ()
+\end{spec}
+To allow us to suppress the |BlockedIndefinitelyOnMVar| exceptions when needed, we define the |quiet| function, \eg, |quiet consumeSend| does not throw any exceptions.
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
@@ -104,8 +115,6 @@ instance Session RawEnd
     type Dual RawEnd = RawEnd
     new = MkRawEnd <$> newSync
 \end{spec}
-
-Where |quiet| suppresses any |BlockedIndefinitelyOnMVar| errors.
 
 \begin{spec}
 send :: (a, RawSend a s) %1 -> Linear.IO s
