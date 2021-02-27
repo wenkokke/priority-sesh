@@ -66,14 +66,14 @@ One-shot channels are created in the linear |IO| monad, so \emph{forgetting} to 
 One-shot channels implement |Consumable| by simply dropping their |MVar|s. The Haskell runtime throws an exception when a ``thread is blocked on an |MVar|, but there are no other references to the |MVar| so it can't ever continue.''\footnote{\url{https://downloads.haskell.org/~ghc/9.0.1/docs/html/libraries/base-4.15.0.0/Control-Exception.html\#t:BlockedIndefinitelyOnMVar}} Practically, |consumeSend| throws a |BlockedIndefinitelyOnMVar| exception, whereas |consumeRecv| does not.
 \begin{spec}
 consumeSend = do  (ch_s, ch_r) <- newOneShot
-                  spawn $ return (consume ch_s)
+                  fork $ return (consume ch_s)
                   recvOnce ch_r
 
 consumeRecv = do  (ch_s, ch_r) <- newOneShot
-                  spawn $ return (consume ch_r)
+                  fork $ return (consume ch_r)
                   sendOnce ch_s ()
 \end{spec}
-Where |spawn| spawns off a new thread using a linear |forkIO|.
+Where |fork| forks off a new thread using a linear |forkIO|.
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
@@ -156,7 +156,7 @@ TODO: |cancel| calls |consume|, but channels do not implement consumable to avoi
 \begin{spec}
 connect ::  Session s => (s %1 -> Linear.IO ()) %1 ->
             (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
-connect k1 k2 = do (s1, s2) <- new; spawn (k1 s1); k2 s2
+connect k1 k2 = do (s1, s2) <- new; fork (k1 s1); k2 s2
 \end{spec}
 
 
@@ -197,7 +197,7 @@ mx >>>= mf = MkSesh $ runSeshIO mx >>= \x -> runSeshIO (mf x)
 We define similar wrappers for the concurrency and communication primitives:
 \begin{itemize*}[label=\empty]
 \item |send|, |recv|, and |close| each perform a communication action with some priority |o|, and return a computation of type |Sesh o o|, \ie, with \emph{exact} bounds;
-\item |new|, |spawn|, and |cancel| don't perform any communication action, and so return a \emph{pure} computation of type |Sesh Top Bot|.
+\item |new|, |fork|, and |cancel| don't perform any communication action, and so return a \emph{pure} computation of type |Sesh Top Bot|.
 \end{itemize*}
 
 \begin{spec}
@@ -205,7 +205,7 @@ send     :: Session s => (a, Send o a s) %1 -> Sesh (Val o) (Val o) s
 recv     :: Session s => Recv o a s %1 -> Sesh (Val o) (Val o) (a, s)
 close    :: End o %1 -> Sesh (Val o) (Val o) ()
 new      :: Session s => Sesh Top Bot (s, Dual s)
-spawn    :: Sesh p q () %1 -> Sesh Top Bot ()
+fork     :: Sesh p q () %1 -> Sesh Top Bot ()
 cancel   :: Session s => s %1 -> Sesh Top Bot ()
 \end{spec}
 

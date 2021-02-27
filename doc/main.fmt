@@ -49,6 +49,7 @@
 %format join         = "\tm{\Varid{join}}"
 %format new          = "\tm{\Varid{new}}"
 %format spawn        = "\tm{\Varid{spawn}}"
+%format fork         = "\tm{\Varid{fork}}"
 %format send         = "\tm{\Varid{send}}"
 %format recv         = "\tm{\Varid{recv}}"
 %format close        = "\tm{\Varid{close}}"

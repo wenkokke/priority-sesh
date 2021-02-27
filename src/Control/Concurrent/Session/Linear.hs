@@ -34,7 +34,7 @@ module Control.Concurrent.Session.Linear
   , End
   -- Communication primitives
   , new
-  , spawn
+  , fork
   , send
   , recv
   , close
@@ -190,9 +190,9 @@ runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 new :: Session s => Sesh t 'Top 'Bot (s, Dual s)
 new = Sesh $ bimap fromRaw fromRaw <$> Raw.new
 
--- |Spawn off the first argument as a new  thread.
-spawn :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
-spawn = Sesh . void . forkIO . unsafeRunSesh
+-- |Fork off the first argument as a new  thread.
+fork :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
+fork = Sesh . void . forkIO . unsafeRunSesh
 
 -- |Send a value over a channel.
 send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
