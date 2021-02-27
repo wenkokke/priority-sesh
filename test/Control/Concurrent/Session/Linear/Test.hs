@@ -25,11 +25,11 @@ import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
 fail :: String -> Sesh t p q a
 fail = error
 
-(>>) :: (Consumable a, q < p') =>
-  Sesh t p q a %1 ->
+(>>) :: (q < p') =>
+  Sesh t p q () %1 ->
   Sesh t p' q' b %1 ->
   Sesh t (Min p p') (Max q q') b
-mx >> my = mx Session.>>>= \x -> x `lseq` my
+(>>) = (Session.>>>)
 
 (>>=) :: (q < p') =>
   Sesh t p q a %1 ->
@@ -48,7 +48,7 @@ pingWorks = TestLabel "ping" $ TestCase (assert (runSeshIO ping))
   where
     ping = do
       (s1, s2) <- new
-      spawn $ do
+      fork $ do
         s1 <- send @0 ((), s1)
         close @1 s1
       ((), s2) <- recv s2
@@ -72,20 +72,20 @@ calcWorks = TestLabel "calc" $ TestList
   where
     -- Calculator server, which offers negation and addition.
     calcServer :: CalcServer t %1 -> Sesh t _ _ ()
-    calcServer = offerEither (\case
-                                 (Left  s) -> do (x, s) <- recv s
-                                                 s <- send (negate x, s)
-                                                 close s
-                                 (Right s) -> do (x, s) <- recv s
-                                                 (y, s) <- recv s
-                                                 s <- send (x + y, s)
-                                                 close s)
+    calcServer = offerEither $ \case
+      (Left  s) -> do (x, s) <- recv s
+                      s <- send (negate x, s)
+                      close s
+      (Right s) -> do (x, s) <- recv s
+                      (y, s) <- recv s
+                      s <- send (x + y, s)
+                      close s
 
     -- Server offers calcuator, client chooses (negate 42).
     neg :: Sesh t _ _ Bool
     neg = do
       (s, s') <- new
-      spawn (calcServer s')
+      fork (calcServer s')
       s <- selectLeft s
       s <- send (42, s)
       (x, s) <- recv s
@@ -96,7 +96,7 @@ calcWorks = TestLabel "calc" $ TestList
     add :: Sesh t _ _ Bool
     add = do
       (s, s') <- new
-      spawn (calcServer s')
+      fork (calcServer s')
       s <- selectRight s
       s <- send (4, s)
       s <- send (5, s)
@@ -117,14 +117,14 @@ cancelWorks = TestLabel "cancel" $ TestList
     -- Server cancels, client tries to receive.
     cancelRecv = do
       (s, s') <- new
-      spawn $ cancel s'
+      fork $ cancel s'
       ((), s) <- recv @0 s
       close @1 s
 
     -- Server cancels, client tries to send.
     cancelSend = do
       (s, s') <- new
-      spawn $ cancel s'
+      fork $ cancel s'
       s <- send @0 ((), s)
       cancel (s :: End _ 1) -- close tries to sync
 
@@ -137,7 +137,7 @@ cancelWorks = TestLabel "cancel" $ TestList
 --     deadlock = do
 --       (s1, r1) <- new
 --       (s2, r2) <- new
---       spawn $ do ((), r1) <- recv @0 r1
+--       fork $ do ((), r1) <- recv @0 r1
 --                  close @1 r1
 --                  s2 <- send @2 ((), s2)
 --                  close @3 s2

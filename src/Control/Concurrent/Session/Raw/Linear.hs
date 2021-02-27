@@ -52,10 +52,19 @@ data End      = End OneShot.SyncOnce
 
 -- * Duality and session initiation
 
-class (Session (Dual s), Dual (Dual s) ~ s) => Session s where
+class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
   type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
   cancel :: s %1 -> Linear.IO ()
+
+instance Consumable (Send a s) where
+  consume (Send ch_s) = consume ch_s
+
+instance Consumable (Recv a s) where
+  consume (Recv ch_r) = consume ch_r
+
+instance Consumable End where
+  consume (End sync) = consume sync
 
 instance Session s => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)

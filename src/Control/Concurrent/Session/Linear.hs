@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds         #-}
 {-# LANGUAGE DataKinds               #-}
 {-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE GADTs                   #-}
 {-# LANGUAGE LinearTypes             #-}
 {-# LANGUAGE NoImplicitPrelude       #-}
@@ -23,9 +24,8 @@ module Control.Concurrent.Session.Linear
   , Sesh
   , runSesh
   , runSeshIO
-  , ibind
-  , (=<<<)
   , (>>>=)
+  , (>>>)
   , ireturn
   -- Session types and channels
   , Session (Dual)
@@ -103,7 +103,8 @@ data End  t (o :: Nat)     = End Raw.End
 
 -- * Duality and conversion to Raw representation
 
-class ( Session (Dual s)                 -- The dual of a session is also a session.
+class ( Consumable s                     -- Sessions are involutive.
+      , Session (Dual s)                 -- The dual of a session is also a session.
       , Dual (Dual s) ~ s                -- Duality is involutive.
       , Raw.Session (Raw s)              -- The Raw representation is also a session.
       , Raw (Dual s) ~ Raw.Dual (Raw s)  -- Duality and Raw commute.
@@ -114,6 +115,15 @@ class ( Session (Dual s)                 -- The dual of a session is also a sess
 
   toRaw   :: s %1 -> Raw s
   fromRaw :: Raw s %1 -> s
+
+instance Consumable (Send t o a s) where
+  consume (Send raw) = consume raw
+
+instance Consumable (Recv t o a s) where
+  consume (Recv raw) = consume raw
+
+instance Consumable (End t o) where
+  consume (End raw) = consume raw
 
 instance Session s => Session (Send t o a s) where
   type Dual (Send t o a s) = Recv t o a (Dual s)
@@ -136,6 +146,13 @@ instance Session (End t o) where
   toRaw (End s) = s
   fromRaw s = End s
 
+instance Session () where
+  type Dual () = ()
+  type Raw  () = ()
+
+  toRaw () = ()
+  fromRaw () = ()
+
 
 -- * The |Sesh| communication monad
 
@@ -153,26 +170,19 @@ newtype Sesh
 unsafeRunSesh :: Sesh t l u a %1 -> Linear.IO a
 unsafeRunSesh (Sesh x) = x
 
-ibind :: (q < p') =>
-  (a %1 -> Sesh t p' q' b) %1 ->
-  Sesh t p q a %1 ->
-  Sesh t (Min p p') (Max q q') b
-ibind mf mx = Sesh $ unsafeRunSesh mx >>= (unsafeRunSesh . mf)
-
-infixr 1 =<<<
 infixl 1 >>>=
-
-(=<<<) :: (q < p') =>
-  (a %1 -> Sesh t p' q' b) %1 ->
-  Sesh t p q a %1 ->
-  Sesh t (Min p p') (Max q q') b
-(=<<<) = ibind
 
 (>>>=) :: (q < p') =>
   Sesh t p q a %1 ->
   (a %1 -> Sesh t p' q' b) %1 ->
   Sesh t (Min p p') (Max q q') b
-(>>>=) = flip ibind
+mx >>>= mf = Sesh $ unsafeRunSesh mx >>= (unsafeRunSesh . mf)
+
+(>>>) :: (q < p') =>
+  Sesh t p q () %1 ->
+  Sesh t p' q' b %1 ->
+  Sesh t (Min p p') (Max q q') b
+mx >>> my = mx >>>= \() -> my
 
 ireturn :: a %1 -> Sesh t 'Top 'Bot a
 ireturn x = Sesh $ return x
