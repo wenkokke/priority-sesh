@@ -24,14 +24,7 @@
 \email{wen.kokke@@ed.ac.uk}
 
 \begin{abstract}
-  The paper should be structured as follows\dots
-  \begin{itemize}
-  \item an example using \texttt{priority-sesh}
-  \item introduce session types
-  \item introduce Linear Haskell
-  \item introduce \texttt{priority-sesh}
-  \item relate to PGV via a monadic reflection
-  \end{itemize}
+	To be written last\dots
 \end{abstract}
 
 \begin{CCSXML}

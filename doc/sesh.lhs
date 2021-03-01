@@ -63,17 +63,28 @@ syncOnce (MkSyncOnce ch_s ch_r) = do sendOnce ch_s (); recvOnce ch_r
 \paragraph{Cancellation}
 One-shot channels are created in the linear |IO| monad, so \emph{forgetting} to use a channel results in a complaint from the type-checker. However, it is possible to \emph{explicitly} drop values whose types implement the |Consumable| class, using |consume :: a %1 -> ()|.
 
-One-shot channels implement |Consumable| by simply dropping their |MVar|s. The Haskell runtime throws an exception when a ``thread is blocked on an |MVar|, but there are no other references to the |MVar| so it can't ever continue.''\footnote{\url{https://downloads.haskell.org/~ghc/9.0.1/docs/html/libraries/base-4.15.0.0/Control-Exception.html\#t:BlockedIndefinitelyOnMVar}} Practically, |consumeSend| throws a |BlockedIndefinitelyOnMVar| exception, whereas |consumeRecv| does not.
+One-shot channels implement |Consumable| by simply dropping their |MVar|s. The Haskell runtime throws an exception when a ``thread is blocked on an |MVar|, but there are no other references to the |MVar| so it can't ever continue.''\footnote{\url{https://downloads.haskell.org/~ghc/9.0.1/docs/html/libraries/base-4.15.0.0/Control-Exception.html\#t:BlockedIndefinitelyOnMVar}} Practically, |consumeAndRecv| throws a |BlockedIndefinitelyOnMVar| exception, whereas |consumeAndSend| does not:
+\begin{center}
+\begin{minipage}{0.5\linewidth}
 \begin{spec}
-consumeSend = do  (ch_s, ch_r) <- newOneShot
-                  fork $ return (consume ch_s)
-                  recvOnce ch_r
-
-consumeRecv = do  (ch_s, ch_r) <- newOneShot
-                  fork $ return (consume ch_r)
-                  sendOnce ch_s ()
+consumeAndRecv = do
+  (ch_s, ch_r) <- newOneShot
+  fork $ return (consume ch_s)
+  recvOnce ch_r
 \end{spec}
-Where |fork| forks off a new thread using a linear |forkIO|.
+\end{minipage}%
+\begin{minipage}{0.5\linewidth}
+\begin{spec}
+consumeAndSend = do u
+  (ch_s, ch_r) <- newOneShot
+  fork $ return (consume ch_r)
+  sendOnce ch_s ()
+\end{spec}
+\end{minipage}%
+\end{center}
+(Where |fork| forks off a new thread using a linear |forkIO|.)
+
+As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even happen when a channel is dropped for reasons other than consume, such as a process crashing.
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
@@ -85,7 +96,7 @@ Let's look at a simple example of a session-typed channel---a multiplication ser
 type MulServer = RawRecv Int (RawRecv Int (RawSend Int RawEnd))
 type MulClient = RawSend Int (RawSend Int (RawRecv Int RawEnd))
 \end{spec}
-We define |mulServer|, which acts on a channel of type |MulServer|, and |mulClient|, which acts on a channel of the \emph{dual} type.
+We define |mulServer|, which acts on a channel of type |MulServer|, and |mulClient|, which acts on a channel of the \emph{dual} type:
 \begin{center}
 \begin{minipage}{0.475\linewidth}
 \begin{spec}
@@ -148,10 +159,9 @@ instance Session RawEnd
 The |send| operation constructs a channel for the continuation of the session, then sends one endpoint of that channel, along with the value, over its one-shot channel, and returns the other endpoint:
 \begin{spec}
 send :: (a, RawSend a s) %1 -> Linear.IO s
-send (x, MkRawSend ch_s) = do
-  (here, there) <- new
-  sendOnce ch_s (x, there)
-  return here
+send (x, MkRawSend ch_s) = do  (here, there) <- new
+                               sendOnce ch_s (x, there)
+                               return here
 \end{spec}
 The |recv| and |close| operations simply wrap their corresponding one-shot operations:
 \begin{spec}
@@ -162,10 +172,74 @@ close :: RawEnd %1 -> Linear.IO ()
 close (MkRawEnd sync) = syncOnce sync
 \end{spec}
 
+\paragraph{Asynchronous close}
+We don't always \emph{want} session-end to involve synchronisation. Unfortunately, the |close| operation is synchronous.
+
+An advantage of defining session types via a type class is that its an \emph{open} class, and we can add new primitives whenever! Let's make the unit type, |()|, a session type:
+\begin{spec}
+instance Session s => Session ()
+  where
+    type Dual () = ()
+    new = return ((), ())
+\end{spec}
+Units are naturally affine---they contain \emph{zero} information, so dropping them won't harm---and the linear |Monad| class allows you to silently drop unit results of monadic computations.
+They're ideal for \emph{asynchronous} session end!
+
 \paragraph{Cancellation}
-TODO: |cancel| calls |consume|, but channels do not implement consumable to avoid implicit dropping of channels due to desugaring of do-notation
+We implement session \emph{cancellation} via the |Consumable| class.  For convenience, we provide the |cancel| function:
+\begin{spec}
+	cancel :: Session s => s %1 -> Linear.IO
+	cancel = return . consume
+\end{spec}
+As with one-shot channels, we |consume| simply drops the channel, and relies on the |BlockedIndefinitelyOnMVar| check, which means that |cancelAndRecv| throws an exception and |cancelAndSend| does not:
+\begin{center}
+\begin{minipage}{0.5\linewidth}
+\begin{spec}
+cancelAndRecv = do
+  (ch_s, ch_r) <- new
+  fork $ cancel ch_s
+  ((), ()) <- recv ch_r
+  return ()
+\end{spec}
+\end{minipage}%
+\begin{minipage}{0.5\linewidth}
+\begin{spec}
+cancelAndSend = do u
+  (ch_s, ch_r) <- new
+  fork $ cancel ch_r
+  () <- send ch_s ()
+  return ()
+\end{spec}
+\end{minipage}%
+\end{center}
+These semantics correspond to EGV~\cite{fowlerlindley19}.
+
+\paragraph{Choice}
+
+\todo{%
+	Choice can be encoded as below. This is a \emph{different} form of extension from |()|. It's built on top of the primitives, so we don't even have to fuss about giving |Select| and |Offer|, nor do we have to worry about one-shot channels!}
+
+\begin{spec}
+type Select  s1 s2 = RawSend (Either (Dual s1) (Dual s2)) ()
+type Offer  s1 s2 = RawRecv (Either s1 s2) ()
+
+selectLeft :: (Session s1, Session s2) =>
+  Select s1 s2 %1 -> Linear.IO s1
+selectLeft s = do  (here, there) <- new
+                   send (Left there, s)
+                   return here
+
+offerEither :: (Session s1, Session s2) => Offer s1 s2 %1 ->
+  (Either s1 s2 %1 -> Linear.IO a) %1 -> Linear.IO a
+offerEither s match = do  (e, ()) <- recv s
+                          match e
+\end{spec}
 
 \paragraph{Deadlock freedom}
+
+\todo{%
+	The session-typed channels as presented thus far can be used to write deadlocking programs. There's two ways of ruling out deadlocking programs. First, we can limit programs by ensuring that there's always \emph{at most} one way to get a message from one channel to another. We can do this by hiding |new| and only exposing |connect|, which creates a new channel and \emph{immediately} shares it between two threads. This one's simple, but it's inexpressive. The other option is priorities, which we discuss in~\cref{sec:priority-sesh}.}
+
 \begin{spec}
 connect ::  Session s => (s %1 -> Linear.IO ()) %1 ->
             (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
