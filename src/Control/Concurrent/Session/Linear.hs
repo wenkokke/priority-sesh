@@ -38,7 +38,6 @@ module Control.Concurrent.Session.Linear
   , send
   , recv
   , close
-  , cancel
   -- Binary choice
   , Select
   , Offer
@@ -220,26 +219,21 @@ recv s = Sesh $ do
 close :: forall o t. End t o %1 -> Sesh t ('Val o) ('Val o) ()
 close s = Sesh $ Raw.close (toRaw s)
 
--- |Cancel a session.
-cancel :: forall s t. Session s => s %1 -> Sesh t 'Top 'Bot ()
-cancel s = ireturn $ consume s
-
 
 -- * Binary choice
 
 type Select t o s1 s2
-  = Send t o (Either (Dual s1) (Dual s2)) (End t (o + 1))
+  = Send t o (Either (Dual s1) (Dual s2)) ()
 
 type Offer t o s1 s2
-  = Recv t o (Either s1 s2) (End t (o + 1))
+  = Recv t o (Either s1 s2) ()
 
 selectLeft :: (Session s1, Session s2) =>
   Select t o s1 s2 %1 ->
   Sesh t ('Val o) ('Val o) s1
 selectLeft s =
   new >>>= \(here, there) ->
-  send (Left there, s) >>>= \s ->
-  cancel s >>>= \() ->
+  send (Left there, s) >>>
   ireturn here
 
 selectRight :: (Session s1, Session s2) =>
@@ -247,8 +241,7 @@ selectRight :: (Session s1, Session s2) =>
   Sesh t ('Val o) ('Val o) s2
 selectRight s =
   new >>>= \(here, there) ->
-  send (Right there, s) >>>= \s ->
-  cancel s >>>= \() ->
+  send (Right there, s) >>>
   ireturn here
 
 offerEither :: (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
@@ -256,8 +249,7 @@ offerEither :: (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
   Offer t o s1 s2 %1 ->
   Sesh t (Min ('Val o) p) (Max ('Val o) q) a
 offerEither match s =
-  recv s >>>= \(x, s) ->
-  cancel s >>>= \() ->
+  recv s >>>= \(x, ()) ->
   match x
 
 -- -}

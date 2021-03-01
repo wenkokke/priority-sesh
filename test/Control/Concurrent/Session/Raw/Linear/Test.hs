@@ -106,16 +106,12 @@ cancelWorks = TestLabel "cancel" $ TestList
   where
     -- Server cancels, client tries to receive.
     cancelRecv = do
-      connect cancel
-        (\s -> do
-            ((), s) <- recv s
-            close s
-        )
+      connect
+        (\s -> return (consume s))
+        (\s -> do ((), ()) <- recv s; return ())
 
     -- Server cancels, client tries to send.
     cancelSend = do
-      connect cancel
-        (\s -> do
-            s <- send ((), s)
-            cancel (s :: End) -- close tries to sync
-        )
+      connect
+        (\s -> return (consume s))
+        (\s -> do () <- send ((), s); return ())
