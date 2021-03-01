@@ -20,12 +20,17 @@
 %format 1              = one_ "\hsOneCmd "
 %format \              = lambda_ "\hsLambdaCmd "
 %format ->             = "\hsArrow{" `arrow_` "}{" `lineararrow_` "}{" lambdaperiod_ "}"
+%format forall(x)      = forall_ x "\hsForallCmd "
+%format .              = "\hsDot{" `comp_` "}{" period_ "}"
 %format percent_       = "\%"
 %format one_           = "1"
 %format lambda_        = "\lambda "
 %format `arrow_`       = "\rightarrow "
 %format `lineararrow_` = "\multimap "
 %format lambdaperiod_  = "\mathpunct{.}"
+%format forall_        = "\forall "
+%format `comp_`        = "\circ "
+%format period_        = "\mathpunct{.}"
 %
 \ReadOnlyOnce{linear.fmt}
 \makeatletter
@@ -49,10 +54,14 @@
   \global\let\hsOneCmd=\hsNoOp
   \global\let\hsArrow=\hsLinearArrow}
 \newcommand\hsLambdaCmd{\global\let\hsArrow=\hsLambdaPeriod}
+\newcommand\hsForallCmd{\global\let\hsDot=\hsPeriod}
+\newcommand\hsPeriod[2]{#2\global\let\hsDot=\hsCompose}
+\newcommand\hsCompose[2]{#1}
 
 \AtHaskellReset{%
   \global\let\hsOneCmd=\hsNoOp
-  \global\let\hsArrow=\hsUnrestrictedArrow}
+  \global\let\hsArrow=\hsUnrestrictedArrow
+	\global\let\hsDot=\hsCompose}
 
 \HaskellReset
 

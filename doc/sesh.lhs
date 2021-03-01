@@ -248,7 +248,9 @@ connect k1 k2 = do (s1, s2) <- new; fork (k1 s1); k2 s2
 
 
 \subsection{Session-typed channels with priority}\label{sec:priority-sesh}
+We conclude by decorating the session-typed channels with \emph{priorities} to ensure deadlock freedom.
 
+\paragraph{Priorities}
 Priorities are either |Bot|, a~natural number, or |Top|. A~natural number priority represents the time at which some action happens---the lower the number, the sooner it happens. The values |Top| and |Bot| are used as the identities for |`Min`| and |`Max`| in lower and upper bounds on priorities, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
 
 \begin{spec}
@@ -257,8 +259,10 @@ data Priority = Bot | Val Nat | Top
 
 We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as usual.
 
+\paragraph{Channels}
 We define |Send o|, |Recv o|, and |End o|, which decorate the raw sessions from~\cref{sec:sesh} with the priority |o| of the communication action, \ie, when does the communication happen? Duality (|Dual|) preserves these priorities. Operationally, these types are mere wrappers.
 
+\paragraph{The communication monad}
 We define a graded monad |Sesh p q|, which decorates |Linear.IO| with a lower bound |p| and an upper bound |q| on the priorities of its communication actions, \ie, if you run the monad, when does communication begin and end?
 
 \begin{spec}
@@ -295,3 +299,11 @@ new      :: Session s => Sesh Top Bot (s, Dual s)
 fork     :: Sesh p q () %1 -> Sesh Top Bot ()
 cancel   :: Session s => s %1 -> Sesh Top Bot ()
 \end{spec}
+
+\paragraph{Safe IO}
+\todo{%
+	We can decorate the communication monad and channel types with tokens \`a la |runST|, which allows to safely implement |runSesh :: (forall tok. Sesh p q tok a) %1 -> a| using |unsafePerformIO|.}
+
+\paragraph{Recursion}
+\todo{%
+	We can write priority-polymorphic types and use those to implement recursive sessions, \`a la~\citet{padovaninovara15}.}
