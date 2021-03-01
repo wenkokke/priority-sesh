@@ -222,7 +222,7 @@ close s = Sesh $ Raw.close (toRaw s)
 
 -- |Cancel a session.
 cancel :: forall s t. Session s => s %1 -> Sesh t 'Top 'Bot ()
-cancel s = Sesh $ Raw.cancel (toRaw s)
+cancel s = ireturn $ consume s
 
 
 -- * Binary choice

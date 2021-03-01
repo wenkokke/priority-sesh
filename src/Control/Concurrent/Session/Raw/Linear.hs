@@ -55,7 +55,6 @@ data End      = End OneShot.SyncOnce
 class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
   type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
-  cancel :: s %1 -> Linear.IO ()
 
 instance Consumable (Send a s) where
   consume (Send ch_s) = consume ch_s
@@ -69,22 +68,18 @@ instance Consumable End where
 instance Session s => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
   new = bimap Send Recv <$> OneShot.new
-  cancel (Send ch_s) = return (consume ch_s)
 
 instance Session s => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
   new = bimap Recv Send . swap <$> OneShot.new
-  cancel (Recv ch_r) = return (consume ch_r)
 
 instance Session End where
   type Dual End = End
   new = bimap End End <$> OneShot.newSync
-  cancel (End sync) = return (consume sync)
 
 instance Session () where
   type Dual () = ()
   new = return ((), ())
-  cancel () = return ()
 
 
 -- * Communication primitives
@@ -100,6 +95,9 @@ recv (Recv ch_r) = OneShot.recv ch_r
 
 close :: End %1 -> Linear.IO ()
 close (End sync) = OneShot.sync sync
+
+cancel :: Session s => s %1 -> Linear.IO ()
+cancel s = return $ consume s
 
 connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
 connect k1 k2 = do (s1, s2) <- new; void $ forkIO (k1 s1); k2 s2

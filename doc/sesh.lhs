@@ -77,11 +77,15 @@ Where |fork| forks off a new thread using a linear |forkIO|.
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
-Let's look at a simple example of a session-typed channel---a multiplication service.
+We continue by using the one-shot channels to build a small library of \emph{session-typed channels}.
+
+\paragraph{An example}
+Let's look at a simple example of a session-typed channel---a multiplication service, which receives two integers, sends back their product, and then finishes:
 \begin{spec}
 type MulServer = RawRecv Int (RawRecv Int (RawSend Int RawEnd))
+type MulClient = RawSend Int (RawSend Int (RawRecv Int RawEnd))
 \end{spec}
-
+We define |mulServer|, which acts on a channel of type |MulServer|, and |mulClient|, which acts on a channel of the \emph{dual} type.
 \begin{center}
 \begin{minipage}{0.475\linewidth}
 \begin{spec}
@@ -95,7 +99,7 @@ mulServer (s :: MulServer)
 \end{minipage}%
 \begin{minipage}{0.525\linewidth}
 \begin{spec}
-mulClient (s :: Dual MulServer)
+mulClient (s :: MulClient)
   = do  s <- send (32, s)
         s <- send (41, s)
         (z, s) <- recv s
@@ -104,9 +108,10 @@ mulClient (s :: Dual MulServer)
 \end{spec}
 \end{minipage}%
 \end{center}
-We use the one-shot channels to build a small library of \emph{session-typed channels}.
+Each action on a session-typed channel returns a channel for the continuation of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types---it ensures that when one process sends, the other is ready to receive, and vice versa.
 
-First, we define the |Session| class. A~session type must have a |Dual|, which must itself be a session type. Duality must be an \emph{injective} and \emph{involutive} function. Finally, |new| creates a session-typed channel.
+\paragraph{Channels}
+We start by formalising this notion of duality. Each session type must have a dual, which must itself be a session type. Duality must be an \emph{injective} and \emph{involutive} function. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
 \begin{spec}
 class (Session (Dual s) , Dual (Dual s) ~ s) => Session s
   where
@@ -119,7 +124,11 @@ data RawSend a s  = (Session s) => MkRawSend (SendOnce (a, Dual s))
 data RawRecv a s  = (Session s) => MkRawRecv (RecvOnce (a, s))
 data RawEnd       = MkRawEnd SyncOnce
 \end{spec}
+A channel |RawSend| wraps a one-shot channel |SendOnce| over which we send some value and the channel over which \emph{the other process} continues the session---it'll make more sense once you read the definition for |send|.
+A channel |RawRecv| wraps a one-shot channel |RecvOnce| over which we receive some value and the channel over which \emph{we} continue the session.
+Finally, an channel |RawEnd| wraps a synchronisation.
 
+We define duality for each session type---|RawSend| is dual to |RawRecv|, |RawRecv| is dual to |RawSend|, and |RawEnd| is dual to itself:
 \begin{spec}
 instance Session s => Session (RawSend a s)
   where
@@ -136,14 +145,16 @@ instance Session RawEnd
     type Dual RawEnd = RawEnd
     new = bimap MkRawEnd MkRawEnd <$> newSync
 \end{spec}
-
+The |send| operation constructs a channel for the continuation of the session, then sends one endpoint of that channel, along with the value, over its one-shot channel, and returns the other endpoint:
 \begin{spec}
 send :: (a, RawSend a s) %1 -> Linear.IO s
 send (x, MkRawSend ch_s) = do
   (here, there) <- new
   sendOnce ch_s (x, there)
   return here
-
+\end{spec}
+The |recv| and |close| operations simply wrap their corresponding one-shot operations:
+\begin{spec}
 recv :: RawRecv a s %1 -> Linear.IO (a, s)
 recv (MkRawRecv ch_r) = recvOnce ch_r
 
@@ -151,8 +162,10 @@ close :: RawEnd %1 -> Linear.IO ()
 close (MkRawEnd sync) = syncOnce sync
 \end{spec}
 
+\paragraph{Cancellation}
 TODO: |cancel| calls |consume|, but channels do not implement consumable to avoid implicit dropping of channels due to desugaring of do-notation
 
+\paragraph{Deadlock freedom}
 \begin{spec}
 connect ::  Session s => (s %1 -> Linear.IO ()) %1 ->
             (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
@@ -208,5 +221,3 @@ new      :: Session s => Sesh Top Bot (s, Dual s)
 fork     :: Sesh p q () %1 -> Sesh Top Bot ()
 cancel   :: Session s => s %1 -> Sesh Top Bot ()
 \end{spec}
-
-
