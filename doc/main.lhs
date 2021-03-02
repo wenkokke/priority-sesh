@@ -11,7 +11,6 @@
 \input{preamble/pgv}
 \input{preamble/sesh}
 
-
 \begin{document}
 
 \title{Session Types with Priority in Linear Haskell}
@@ -52,6 +51,20 @@
 %include introduction.lhs
 %include sesh.lhs
 %include pgv.lhs
+
+\section{Related work}
+
+\todo{%
+  Comparison with Haskell implementations.}
+\todo{%
+  Comparison with other session types in PL:
+  \emph{(i)} runtime checking of linearity;
+  \emph{(ii)} static checking of linearity;
+  \emph{(iii)} guarantee via an external tool, such as Scribble.}
+\todo{%
+  Checking deadlock freedom:
+  - deadlock freedom via tree structure in~\cite{kokke19};
+  - deadlock freedom via priorities in SILL [Balzer and Pfenning 2019].}
 
 \clearpage
 \bibliography{main}
