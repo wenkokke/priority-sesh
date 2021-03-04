@@ -18,54 +18,51 @@
   publisher		= {River Publishers}
 }
 
+@inproceedings{orchardyoshida16,
+  author    = {Dominic A. Orchard and
+               Nobuko Yoshida},
+  title     = {Effects as sessions, sessions as effects},
+  booktitle = {Proc.\ of {POPL}},
+  pages     = {568--581},
+  publisher = {{ACM}},
+  year      = {2016},
+  doi       = {10.1145/2837614.2837634}
+ }
+
 @inproceedings{pucellatov08,
   doi					= {10.1145/1411286.1411290},
   url					= {https://doi.org/10.1145/1411286.1411290},
   year				= {2008},
-  publisher		= {{ACM} Press},
+  publisher		= {{ACM} },
   author			= {Riccardo Pucella and Jesse A. Tov},
   title				= {Haskell session types with (almost) no class},
-  booktitle		= {Proceedings of the first {ACM} {SIGPLAN} symposium on Haskell - Haskell {\textquotesingle}08}
+  booktitle		= {Proc.\ of Haskell}
 }
 
 
-@article{lindleymorris16,
-  author			= {Lindley, Sam and Morris, J. Garrett},
-  title				= {Embedding Session Types in Haskell},
-  year				= {2016},
-  issue_date	= {December 2016},
-  publisher		= {Association for Computing Machinery},
-  address			= {New York, NY, USA},
-  volume			= {51},
-  number			= {12},
-  issn				= {0362-1340},
-  url					= {https://doi.org/10.1145/3241625.2976018},
-  doi					= {10.1145/3241625.2976018},
-  abstract		= {We present a novel embedding of session-typed concurrency in Haskell. We extend an existing HOAS embedding of linear λ-calculus with a set of core session-typed primitives, using indexed type families to express the constraints of the session typing discipline. We give two interpretations of our embedding, one in terms of GHC’s built-in concurrency and another in terms of purely functional continuations. Our safety guarantees, including deadlock freedom, are assured statically and introduce no additional runtime overhead.},
-  journal			= {SIGPLAN Not.},
-  month				= sep,
-  pages				= {133–145},
-  numpages		= {13},
-  keywords		= {session types, embedded languages, linear types}
+@inproceedings{lindleymorris16,
+  author    = {Sam Lindley and
+               J. Garrett Morris},
+  title     = {Embedding session types in Haskell},
+  booktitle = {Proc.\ of Haskell},
+  pages     = {133--145},
+  publisher = {{ACM}},
+  year      = {2016},
+  doi       = {10.1145/2976002.2976018}
 }
 
 @unpublished{kokkedardha21,
   author			= "Wen Kokke and Ornela Dardha",
   title				= "Prioritise the Best Variation",
-  note				= "Manuscript submitted for publication",
+  note			= "Manuscript submitted for publication",
 }
 
 @article{kokke19,
-  abstract		= {Rusty Variation (RV) is a library for session-typed communication
-                  in Rust which offers strong compile-time correctness
-                  guarantees. Programs written using RV are guaranteed to
-                  respect a specified protocol, and are guaranteed to be free
-                  from deadlocks and races.},
-  title				= {{Rusty Variation}: Deadlock-free Sessions with Failure in {Rust}},
+   title			= {{Rusty Variation}: Deadlock-free Sessions with Failure in {Rust}},
   author			= {Wen Kokke},
-  journal			= {{Electronic Proceedings in Theoretical Computer Science}},
+  journal			= {{EPTCS}},
   volume			= {304},
-  issn				= {2075-2180},
+  issn			= {2075-2180},
   publisher		= {Open Publishing Association},
   year				= {2019},
   month				= sep,
@@ -76,67 +73,49 @@
 }
 
 @inproceedings{peytonjonesgordon96,
-  author			= {Simon L. {Peyton Jones} and
-               Andrew D. Gordon and
-               Sigbj{\o}rn Finne},
-  editor			= {Hans{-}Juergen Boehm and
-               Guy L. Steele Jr.},
-  title				= {Concurrent Haskell},
-  booktitle		= {Conference Record of POPL'96: The 23rd {ACM} {SIGPLAN-SIGACT} Symposium
-               on Principles of Programming Languages, Papers Presented at the Symposium,
-               St. Petersburg Beach, Florida, USA, January 21-24, 1996},
-  pages				= {295--308},
-  publisher		= {{ACM} Press},
-  year				= {1996},
-  url					= {https://doi.org/10.1145/237721.237794},
-  doi					= {10.1145/237721.237794},
-  timestamp		= {Tue, 25 Jun 2019 09:29:17 +0200},
-  biburl			= {https://dblp.org/rec/conf/popl/JonesGF96.bib},
-  bibsource		= {dblp computer science bibliography, https://dblp.org}
+  author		= {Simon L. {Peyton Jones} and Andrew D. Gordon and Sigbj{\o}rn Finne},
+  title			= {Concurrent Haskell},
+  booktitle		= {Proc.\ of {POPL}},
+  pages		= {295--308},
+  publisher	= {{ACM}},
+  yea			= {1996},
+  doi			= {10.1145/237721.237794}
 }
 
 
 @inproceedings{dardhagiachino12,
   author			= {Dardha, Ornela and Giachino, Elena and Sangiorgi, Davide},
   publisher		= {ACM},
-  booktitle		= {Proc.\ of {PPDP}},
-  year				= 2012,
-  pages				= {139--150},
+  booktitle			= {Proc.\ of {PPDP}},
+  publisher		= {ACM},
+  year			= 2012,
+  pages			= {139--150},
   title				= {Session types revisited},
 }
 
 @article{bernardyboespflug18,
-  doi					= {10.1145/3158093},
-  url					= {https://doi.org/10.1145/3158093},
-  year				= {2018},
-  month				= jan,
-  publisher		= {Association for Computing Machinery ({ACM})},
+  doi				= {10.1145/3158093},
+  year			= {2018},
+  publisher		= {ACM},
   volume			= {2},
-  number			= {{POPL}},
-  pages				= {1--29},
+  journal			= {Proc.\ of {POPL}},
+  pages			= {1--29},
   author			= {Jean-Philippe Bernardy and Mathieu Boespflug and Ryan R. Newton and Simon Peyton Jones and Arnaud Spiwack},
-  title				= {Linear Haskell: practical linearity in a higher-order polymorphic language},
-  journal			= {Proceedings of the {ACM} on Programming Languages}
-}
+  title				= {Linear Haskell: practical linearity in a higher-order polymorphic language}
+ }
 
 @article{fowlerlindley19,
   author			= {Fowler, Simon and Lindley, Sam and Morris, J. Garrett and Decova, S\'{a}ra},
   title				= {Exceptional Asynchronous Session Types: Session Types without Tiers},
-  year				= {2019},
-  issue_date	= {January 2019},
-  publisher		= {Association for Computing Machinery},
+  year			= {2019},
+  publisher		= {ACM},
   address			= {New York, NY, USA},
   volume			= {3},
-  number			= {POPL},
-  url					= {https://doi.org/10.1145/3290341},
-  doi					= {10.1145/3290341},
-  abstract		= {Session types statically guarantee that communication complies with a protocol. However, most accounts of session typing do not account for failure, which means they are of limited use in real applications---especially distributed applications---where failure is pervasive.  We present the first formal integration of asynchronous session types with exception handling in a functional programming language. We define a core calculus which satisfies preservation and progress properties, is deadlock free, confluent, and terminating.  We provide the first implementation of session types with exception handling for a fully-fledged functional programming language, by extending the Links web programming language; our implementation draws on existing work on effect handlers. We illustrate our approach through a running example of two-factor authentication, and a larger example of a session-based chat application where communication occurs over session-typed channels and disconnections are handled gracefully.},
-  journal			= {Proc. ACM Program. Lang.},
-  month				= jan,
-  articleno		= {28},
-  numpages		= {29},
-  keywords		= {web programming, session types, exceptions, asynchrony}
-}
+  doi				= {10.1145/3290341},
+  journal			= {Proc.\ of POPL},
+  articleno			= {28},
+  numpages		= {29}
+ }
 
 @inproceedings{polakow15,
   doi					= {10.1145/2804302.2804309},
@@ -146,5 +125,40 @@
   publisher		= {{ACM}},
   author			= {Jeff Polakow},
   title				= {Embedding a full linear Lambda calculus in Haskell},
-  booktitle		= {Proceedings of the 2015 {ACM} {SIGPLAN} Symposium on Haskell}
+  booktitle		= {Proc/ of the Symposium on Haskell}
 }
+
+@inproceedings{neubauerthiemann04,
+  author    = {Matthias Neubauer and
+               Peter Thiemann},
+  title     = {An Implementation of Session Types},
+  booktitle = {Proc.\ of {PADL}},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {3057},
+  pages     = {56--70},
+  publisher = {Springer},
+  year      = {2004},
+  doi       = {10.1007/978-3-540-24836-1\_5}
+}
+
+@inproceedings{imai10,
+  author    = {Keigo Imai and
+               Shoji Yuen and
+               Kiyoshi Agusa},
+  title     = {Session Type Inference in Haskell},
+  booktitle = {Proc.\  pf {PLACES}},
+  series    = {{EPTCS}},
+  volume    = {69},
+  pages     = {74--91},
+  year      = {2010},
+  doi       = {10.4204/EPTCS.69.6}
+}
+
+@article{SackmanEisenbach08,
+author = {Sackman, Matthew and Eisenbach, Susan},
+year = {2008},
+month = {01},
+pages = {},
+title = {Session Types in Haskell Updating Message Passing for the 21st Century}
+}
+
