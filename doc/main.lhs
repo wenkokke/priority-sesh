@@ -52,10 +52,7 @@
 %include sesh.lhs
 %include pgv.lhs
 
-\section{Related work}
-
-\todo{%
-  Comparison with Haskell implementations.}
+\section{Conclusion, Related and Future Work}
 \todo{%
   Comparison with other session types in PL:
   \emph{(i)} runtime checking of linearity;
@@ -65,6 +62,24 @@
   Checking deadlock freedom:
   - deadlock freedom via tree structure in~\cite{kokke19};
   - deadlock freedom via priorities in SILL [Balzer and Pfenning 2019].}
+
+\paragraph{Session Types in Haskell}
+\cite{orchardyoshida17} overview various approaches in the literature for session-typed communication in Haskell, with particular focus on linearity checks. Following this survey by \cite{orchardyoshida17} we discuss below the various approaches to implementing session types in Haskell with linearity.
+\cite{neubauerthiemann04} introduce an encoding of first-order session types with recursion for single channels only.
+\cite{pucellatov08} use parameterised monads and instead adopt multiple
+session channels, recursion, and a basis of delegation, but context splits are performed manually which is cumbersome.
+\cite{imai10} later on extend \cite{pucellatov08} and include full delegation and improve on the use of multiple channels.
+\cite{SackmanEisenbach08} implement session types as value-level witnesses.
+ \cite{orchardyoshida16} implement session types in Haskell via graded monads, guaranteeing their linearity, and leverage an encoding of session-typed $\pi$-calculus into PCF with an effect system. 
+\cite{lindleymorris16} implement GV in Haskell, leveraging an embedding of a linear $\lambda$-calculus by \cite{polakow15}.
+
+\paragraph{Session Types in other Programming Paradigms}
+
+\paragraph{Session Types and Deadlock Freedom}
+
+\paragraph{Conclusion and Future Work}
+
+
 
 \clearpage
 \bibliography{main}
