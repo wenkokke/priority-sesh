@@ -72,6 +72,9 @@ session channels, recursion, and a partial delegation, but context splits to dea
 \cite{SackmanEisenbach08} also use parametrised monads to implement session types, but differently from  \cite{pucellatov08}, they use parametrised monads to construct session type witnesses at the value level.
  \cite{orchardyoshida16} implement session types in Haskell via graded monads, guaranteeing their linearity, and leverage an encoding of session-typed $\pi$-calculus into PCF with an effect system. While types are easy to write, differently from \cite{imai10}, managing fresh channels is left to the user.
 \cite{lindleymorris16} implement GV in Haskell, leveraging an embedding of a linear $\lambda$-calculus by \cite{polakow15}. They enforce linearity, they adopt the notion of context \emph{consumption} where contexts are divided into input and output contexts, the latter being the remained of what is consumed from the input context.
+As discussed by \cite{orchardyoshida17} in the state of the art there is a trade-off between having manageable and easy to write session types and the amount of manual specification or manipulation of contexts, channel names etc.
+Our work escapes this trade of and we have support for all relevant features including recursion, delegation, multiple channels, and highly idiomatic code, and since our implementation is in Linear Haskell, we do not need to deal with contexts.
+Moreover, none of the works above, with exception of \cite{lindleymorris16}, guarantee deadlock freedom. The way \cite{lindleymorris16} deal with deadlock freedom is as a result of adopting GV and as discussed previously, it is more restrictive than our work in that it only allows tree structures of communication, whether we allow cyclic structures due to the use of priorities. 
 
 \paragraph{Session Types in other Programming Paradigms}
 
