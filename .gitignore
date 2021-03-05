@@ -314,3 +314,4 @@ TSWLatexianTemp*
 
 ### Makeindex log files
 *.lpz
+.bash_profile
