@@ -46,12 +46,14 @@ test-suite test-priority-sesh
     Control.Concurrent.OneShot.Linear.Test
     Control.Concurrent.Session.Linear.Test
     Control.Concurrent.Session.Raw.Linear.Test
-  hs-source-dirs:      
+    System.IO.Silently.Linear
+  hs-source-dirs:
     test
   build-depends:
     base        >=4.7 && <5,
     HUnit       >=1.6 && <2,
     linear-base >=0.1 && <0.2,
+    silently    >=1.2 && <2,
     priority-sesh
   default-language:
     Haskell2010

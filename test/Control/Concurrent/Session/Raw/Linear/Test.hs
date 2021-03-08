@@ -1,20 +1,30 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE LinearTypes         #-}
-{-# LANGUAGE RebindableSyntax    #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LinearTypes #-}
+{-# LANGUAGE RebindableSyntax #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Control.Concurrent.Session.Raw.Linear.Test where
 
+import           Control.Concurrent.Linear
 import           Control.Concurrent.Session.Raw.Linear
 import           Control.Functor.Linear
+import           Data.Bifunctor.Linear
+import           Data.Functor.Linear (void)
+import qualified Data.V.Linear as V
+import           Debug.Trace.Linear (traceIO)
 import qualified Prelude
-import           Prelude.Linear hiding (Dual)
+import           Prelude.Linear hiding (Dual, print)
+import           System.IO.Linear (fromSystemIO)
 import qualified System.IO.Linear as Linear
+import           System.IO.Silently.Linear
 import           Test.HUnit
-import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
+import           Test.HUnit.Linear (assertOutput, assertBlockedIndefinitelyOnMVar)
 import qualified Unsafe.Linear as Unsafe
+
 
 -- * Ping
 
@@ -96,7 +106,6 @@ calcWorks = TestLabel "calc" $ TestList
 
 -- * Cancellation
 
-
 -- |Test the interaction of cancel with send and receive.
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
@@ -115,3 +124,71 @@ cancelWorks = TestLabel "cancel" $ TestList
       connect
         (\s -> return (consume s))
         (\s -> do () <- send ((), s); return ())
+
+
+-- * Cyclic Scheduler
+
+newtype Out a = Out (Recv a (In a))
+newtype In a = In (Send a (Out a))
+
+instance Consumable (Out a) where
+  consume (Out x) = consume x
+
+instance Consumable (In a) where
+  consume (In x) = consume x
+
+instance Session (Out a) where
+  type Dual (Out a) = In a
+  new = bimap Out In <$> new
+
+instance Session (In a) where
+  type Dual (In a) = Out a
+  new = bimap In Out <$> new
+
+sched :: Out a %1 -> [In a] %1 -> Linear.IO ()
+sched (Out s1) (In s2 : rest) = do
+  (x, s1) <- recv s1
+  s2 <- send (x, s2)
+  sched s2 (rest ++ [s1])
+
+print :: Show a => a %1 -> Linear.IO ()
+print x = fromSystemIO $ Unsafe.toLinear Prelude.print x
+
+printer :: forall a. (Dupable a, Ord a, FromInteger a, Show a) => Out a %1 -> Linear.IO ()
+printer = printer0
+  where
+    printer0 :: Out a %1 -> Linear.IO ()
+    printer0 (Out s) = do
+      (x, In s) <- recv s
+      printer1 (dup3 x) s
+
+    printer1 :: (a, a, a) %1 -> Send a (Out a) %1 -> Linear.IO ()
+    printer1 (x1, x2, x3) s = do
+      print x1
+      printer2 (x2 < 10) x3 s
+
+    printer2 :: Bool %1 -> a %1 -> Send a (Out a) %1 -> Linear.IO ()
+    printer2 True  x3 s = do
+      s <- send (x3, s)
+      printer s
+    printer2 False x3 s = do
+      x3 `lseq` s `lseq` return ()
+
+add1 :: Out Int %1 -> Linear.IO ()
+add1 (Out s) = do
+  (x, In s) <- recv s
+  s <- send (x + 1, s)
+  add1 s
+
+schedWorks :: Test
+schedWorks = TestLabel "sched" $ TestCase (assertOutput "" "2\n4\n6\n8\n10\n" program)
+  where
+    program = do
+      (In s, o1) <- new
+      (i2, o2) <- new
+      (i3, o3) <- new
+      void $ forkIO (sched o1 [i2, i3])
+      void $ forkIO (add1 o2)
+      void $ forkIO (add1 o3)
+      o1' <- send (0, s)
+      printer o1'
