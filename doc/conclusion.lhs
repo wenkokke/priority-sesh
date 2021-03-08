@@ -33,7 +33,22 @@ We side-step this trade-off by relying on Linear Haskell to check linearity. Fur
 
 Moreover, none of the works above guarantee deadlock freedom, with the exception of \citet{lindleymorris16}, who guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:TODO}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows cyclic structures.
 
+
 \paragraph{Session types in other programming languages}
+Session types have been integrated in other programming language paradigms in addition to Haskell.
+In particular, \cite{JML15,ScalasY16,PadFuse} integrate  \emph{binary} session types in the \emph{native} host language, without language extensions, to avoid hindering their use in practice.
+To obtain this integration of session types, without extensions \cite{ScalasY16,PadFuse}) combine \emph{static} typing of input and output actions with \emph{run-time} checking of linear channel usage. These work implement session types in Scala and OCaml respectively, via a continuation-passing encoding of session types into linear types \cite{dardhagiachino12}.
+
+Implementations of multiparty session types (MPST) are less common than binary implementations.  
+\cite{Scalas2017} integrate MPST in Scala building upon \cite{ScalasY16} and a continuation-passing style encoding of session types into linear types.
+\cite{SivaramakrishnanNZE10} implement MPST leveraging an extension of Java with session primitives. %
+\cite{HY16} develops a MPST-based API generation for Java leveraging CFSMs \cite{Brand1983CFM}.
+\cite{DHHNY2015} implement MPST in Python and \cite{Fowler16,NY2017} in Erlang, focusing on {purely dynamic} MPST verification via run-time monitoring.
+\cite{NY2017A,NBY2017} extend
+\cite{DHHNY2015} with actors and timed specifications.
+\cite{LMMNSVY2015} adopt a dependently-typed MPST theory
+to verify MPI programs.
+
 
 \paragraph{Session types and deadlock freedom}
 
