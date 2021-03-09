@@ -124,10 +124,10 @@ selectRight s = do
   return here
 
 offerEither :: (Session s1, Session s2) =>
-  (Either s1 s2 %1 -> Linear.IO a) %1 ->
   Offer s1 s2 %1 ->
+  (Either s1 s2 %1 -> Linear.IO a) %1 ->
   Linear.IO a
-offerEither match s = do
+offerEither s match = do
   (e, ()) <- recv s
   match e
 

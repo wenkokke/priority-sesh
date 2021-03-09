@@ -245,10 +245,10 @@ selectRight s =
   ireturn here
 
 offerEither :: (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
-  (Either s1 s2 %1 -> Sesh t p q a) %1 ->
   Offer t o s1 s2 %1 ->
+  (Either s1 s2 %1 -> Sesh t p q a) %1 ->
   Sesh t (Min ('Val o) p) (Max ('Val o) q) a
-offerEither match s =
+offerEither s match =
   recv s >>>= \(x, ()) ->
   match x
 

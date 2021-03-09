@@ -11,13 +11,14 @@ main = runTestTT tests
   where
     tests :: Test
     tests = TestList
-      [ OneShot.pingWorks
-      , OneShot.cancelWorks
-      , Raw.pingWorks
-      , Raw.calcWorks
-      , Raw.cancelWorks
-      , Raw.schedWorks
-      , Session.pingWorks
-      , Session.calcWorks
-      , Session.cancelWorks
+      [ OneShot.pingWorks    -- Basic.
+      , OneShot.cancelWorks  -- Cancellation.
+      , Raw.pingWorks        -- Basic.
+      , Raw.calcWorks        -- Choice.
+      , Raw.cancelWorks      -- Cancellation.
+      , Raw.sumWorks         -- Recursion.
+      , Raw.schedWorks       -- Cyclic structure.
+      , Session.pingWorks    -- Basic.
+      , Session.calcWorks    -- Choice.
+      , Session.cancelWorks  -- Cancellation.
       ]
