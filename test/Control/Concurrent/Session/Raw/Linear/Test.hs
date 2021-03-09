@@ -206,7 +206,7 @@ schedNode :: Out a %1 -> [In a] %1 -> Linear.IO ()
 schedNode (Out s1) (In s2 : rest) = do
   (x, s1) <- recv s1
   s2 <- send (x, s2)
-  sched s2 (rest ++ [s1])
+  schedNode s2 (rest ++ [s1])
 
 printNode :: forall a. (Dupable a, Ord a, FromInteger a, Show a) => Out a %1 -> Linear.IO ()
 printNode = printer0
@@ -227,7 +227,7 @@ printNode = printer0
     printer2 :: Bool %1 -> a %1 -> Send a (Out a) %1 -> Linear.IO ()
     printer2 True  x3 s = do
       s <- send (x3, s)
-      printer s
+      printer0 s
     printer2 False x3 s = do
       x3 `lseq` s `lseq` return ()
 
@@ -235,7 +235,7 @@ add1Node :: Out Int %1 -> Linear.IO ()
 add1Node (Out s) = do
   (x, In s) <- recv s
   s <- send (x + 1, s)
-  add1 s
+  add1Node s
 
 schedWorks :: Test
 schedWorks = TestLabel "sched" $ TestCase (assertOutput "" "2\n4\n6\n8\n10\n" main)

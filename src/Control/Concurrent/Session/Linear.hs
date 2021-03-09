@@ -28,13 +28,13 @@ module Control.Concurrent.Session.Linear
   , (>>>)
   , ireturn
   -- Session types and channels
-  , Session (Dual)
+  , Session (..)
   , Send
   , Recv
   , End
   -- Communication primitives
-  , new
   , fork
+  , connect
   , send
   , recv
   , close
@@ -48,7 +48,7 @@ module Control.Concurrent.Session.Linear
 
 import           Prelude.Linear hiding (Max, Min, Dual)
 import           Control.Concurrent.Linear
-import qualified Control.Concurrent.Session.Raw.Linear as Raw
+import qualified Control.Concurrent.OneShot.Linear as OneShot
 import           Control.Functor.Linear
 import           Data.Bifunctor.Linear
 import           Data.Functor.Linear (void)
@@ -95,62 +95,9 @@ type family Max (p :: Priority) (q :: Priority) :: Priority where
 
 -- * Session types
 
-data Send t (o :: Nat) a s = Session s => Send (Raw.Send a (Raw s))
-data Recv t (o :: Nat) a s = Session s => Recv (Raw.Recv a (Raw s))
-data End  t (o :: Nat)     = End Raw.End
-
-
--- * Duality and conversion to Raw representation
-
-class ( Consumable s                     -- Sessions are involutive.
-      , Session (Dual s)                 -- The dual of a session is also a session.
-      , Dual (Dual s) ~ s                -- Duality is involutive.
-      , Raw.Session (Raw s)              -- The Raw representation is also a session.
-      , Raw (Dual s) ~ Raw.Dual (Raw s)  -- Duality and Raw commute.
-      ) => Session s where
-
-  type Dual s = result | result -> s
-  type Raw  s
-
-  toRaw   :: s %1 -> Raw s
-  fromRaw :: Raw s %1 -> s
-
-instance Consumable (Send t o a s) where
-  consume (Send raw) = consume raw
-
-instance Consumable (Recv t o a s) where
-  consume (Recv raw) = consume raw
-
-instance Consumable (End t o) where
-  consume (End raw) = consume raw
-
-instance Session s => Session (Send t o a s) where
-  type Dual (Send t o a s) = Recv t o a (Dual s)
-  type Raw  (Send t o a s) = Raw.Send a (Raw s)
-
-  toRaw (Send s) = s
-  fromRaw s = Send s
-
-instance Session s => Session (Recv t o a s) where
-  type Dual (Recv t o a s) = Send t o a (Dual s)
-  type Raw  (Recv t o a s) = Raw.Recv a (Raw s)
-
-  toRaw (Recv s) = s
-  fromRaw s = Recv s
-
-instance Session (End t o) where
-  type Dual (End t o) = End t o
-  type Raw  (End t o) = Raw.End
-
-  toRaw (End s) = s
-  fromRaw s = End s
-
-instance Session () where
-  type Dual () = ()
-  type Raw  () = ()
-
-  toRaw () = ()
-  fromRaw () = ()
+data Send t (o :: Nat) a s = Session s => Send (OneShot.SendOnce (a, Dual s))
+data Recv t (o :: Nat) a s = Session s => Recv (OneShot.RecvOnce (a, s))
+data End  t (o :: Nat)     = End OneShot.SyncOnce
 
 
 -- * The |Sesh| communication monad
@@ -193,31 +140,69 @@ runSesh :: (forall t. Sesh t p q a) -> a
 runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
 
 
--- * Communication primitives
+-- * Duality and session initiation
 
--- |Create a new channel with two dual endpoints.
-new :: Session s => Sesh t 'Top 'Bot (s, Dual s)
-new = Sesh $ bimap fromRaw fromRaw <$> Raw.new
+class ( Consumable s      -- ^ Sessions are involutive.
+      , Session (Dual s)  -- ^ The dual of a session is also a session.
+      , Dual (Dual s) ~ s -- ^ Duality is involutive.
+      ) => Session s where
+
+  type Dual s = result | result -> s
+  new :: Sesh t 'Top 'Bot (s, Dual s)
+
+instance Consumable (Send t o a s) where
+  consume (Send raw) = consume raw
+
+instance Consumable (Recv t o a s) where
+  consume (Recv raw) = consume raw
+
+instance Consumable (End t o) where
+  consume (End raw) = consume raw
+
+instance Session s => Session (Send t o a s) where
+  type Dual (Send t o a s) = Recv t o a (Dual s)
+  new = Sesh $ bimap Send Recv <$> OneShot.new
+
+instance Session s => Session (Recv t o a s) where
+  type Dual (Recv t o a s) = Send t o a (Dual s)
+  new = Sesh $ bimap Recv Send . swap <$> OneShot.new
+
+instance Session (End t o) where
+  type Dual (End t o) = End t o
+  new = Sesh $ bimap End End <$> OneShot.newSync
+
+instance Session () where
+  type Dual () = ()
+  new = ireturn ((), ())
+
+
+-- * Communication primitives
 
 -- |Fork off the first argument as a new  thread.
 fork :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
 fork = Sesh . void . forkIO . unsafeRunSesh
 
+-- |Combines 'new' and 'fork' in a single operation.
+connect :: (Session s, 'Bot < p') =>
+           (s %1 -> Sesh t p q ()) %1 ->
+           (Dual s %1 -> Sesh t p' q' a) %1 ->
+           Sesh t p' q' a
+connect k1 k2 = new >>>= \(s1, s2) -> fork (k1 s1) >>> k2 s2
+
 -- |Send a value over a channel.
 send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
-send (x, s) = Sesh $ do
-  s <- Raw.send (x, toRaw s)
-  return (fromRaw s)
+send (x, Send ch_s) = Sesh $ do
+  (here, there) <- unsafeRunSesh new
+  OneShot.send ch_s (x, there)
+  return here
 
 -- |Receive a value over a channel.
 recv :: forall o s a t. Session s => Recv t o a s %1 -> Sesh t ('Val o) ('Val o) (a, s)
-recv s = Sesh $ do
-  (x, s) <- Raw.recv (toRaw s)
-  return (x, fromRaw s)
+recv (Recv ch_r) = Sesh $ OneShot.recv ch_r
 
 -- |Close a session.
 close :: forall o t. End t o %1 -> Sesh t ('Val o) ('Val o) ()
-close s = Sesh $ Raw.close (toRaw s)
+close (End sync) = Sesh $ OneShot.sync sync
 
 
 -- * Binary choice
