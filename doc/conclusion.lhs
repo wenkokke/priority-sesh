@@ -1,4 +1,4 @@
-\section{Conclusion, related and future work}
+\section{Conclusion, Related and Future work}
 
 \todo{%
   Comparison with other session types in PL:
