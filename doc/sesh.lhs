@@ -14,6 +14,8 @@ in~\cref{sec:sesh}, we use these one-shot channels to build a small library of \
 in~\cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
 \end{enumerate}
 
+It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel comes from the linear $\pi$-calculus \cite{KPT99} where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of the declared session type.
+
 Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://github.com/tweag/linear-base/}} (\eg, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|). For clarity, we refer to the linear |IO| monad from \texttt{linear-base} as |Linear.IO|.
 
 We colour the Haskell definitions which are a part of Sesh:
@@ -26,8 +28,6 @@ We colour the Haskell definitions which are a part of Sesh:
 \subsection{Library of one-shot channels}\label{sec:one-shot}
 
 We start by building a small library of \emph{linear} or \emph{one-shot channels}, \ie, channels that must be use \emph{exactly once} to send or receive a value.
-
-It is important to notice that the meaning of linearity in this section differs from linearity for session types. A linear or one-shot channel is the based on linear channels in the linear $\pi$-calculus \cite{KPT99} where a channel must be used exactly one for an action; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence by following the structure of the declared session type.
 
 The one-shot channels are at the core of our library, and their efficiency is crucial to the overall efficiency of Priority Sesh. However, we do not aim to present an efficient implementation here. Rather, we aim to present a compact implementation with the correct behaviour.
 
@@ -97,11 +97,11 @@ Where |fork| forks off a new thread using a linear |forkIO|.
 As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even happen when a channel is dropped for reasons other than consume, such as a process crashing.
 
 
-\subsection{Session-typed channels}\label{sec:sesh}
-We continue by using the one-shot channels to build a small library of \emph{session-typed channels}.
+\subsection{Library of session-typed channels}\label{sec:sesh}
+We now use the one-shot channels to build a small library of \emph{session-typed channels}.
 
 \paragraph{An example}
-Let's look at a simple example of a session-typed channel---a multiplication service, which receives two integers, sends back their product, and then finishes:
+Let's look at a simple example of a session-typed channel---a multiplication service, which receives two integers, sends back their product, and then terminates:
 \begin{spec}
 type MulServer = RawRecv Int (RawRecv Int (RawSend Int RawEnd))
 type MulClient = RawSend Int (RawSend Int (RawRecv Int RawEnd))
@@ -129,7 +129,7 @@ mulClient (s :: MulClient)
 \end{spec}
 \end{minipage}%
 \end{center}
-Each action on a session-typed channel returns a channel for the continuation of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types---it ensures that when one process sends, the other is ready to receive, and vice versa.
+Each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
 
 \paragraph{Channels}
 We start by formalising this notion of duality. Each session type must have a dual, which must itself be a session type. Duality must be an \emph{injective} and \emph{involutive} function. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
@@ -145,7 +145,7 @@ data RawSend a s  = (Session s) => MkRawSend (SendOnce (a, Dual s))
 data RawRecv a s  = (Session s) => MkRawRecv (RecvOnce (a, s))
 data RawEnd       = MkRawEnd SyncOnce
 \end{spec}
-A channel |RawSend| wraps a one-shot channel |SendOnce| over which we send some value and the channel over which \emph{the other process} continues the session---it'll make more sense once you read the definition for |send|.
+A channel |RawSend| wraps a one-shot channel |SendOnce| over which we send some value---which is the intended value sent by the session channel, and the channel over which \emph{the communicating partner process} continues the session---it'll make more sense once you read the definition for |send|.
 A channel |RawRecv| wraps a one-shot channel |RecvOnce| over which we receive some value and the channel over which \emph{we} continue the session.
 Finally, an channel |RawEnd| wraps a synchronisation.
 
@@ -261,19 +261,19 @@ connect k1 k2 = do (s1, s2) <- new; fork (k1 s1); k2 s2
 We conclude by decorating the session-typed channels with \emph{priorities} to ensure deadlock freedom.
 
 \paragraph{Priorities}
-Priorities are either |Bot|, a~natural number, or |Top|. A~natural number priority represents the time at which some action happens---the lower the number, the sooner it happens. The values |Top| and |Bot| are used as the identities for |`Min`| and |`Max`| in lower and upper bounds on priorities, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
+Priorities are either |Bot|, a~natural number, or |Top|. A~natural number priority represents abstractly the \emph{time} at which some action happens---the lower the number, the sooner it happens. The values |Top| and |Bot| are used as the identities for |`Min`| and |`Max`| in lower and upper bounds on priorities, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
 
 \begin{spec}
 data Priority = Bot | Val Nat | Top
 \end{spec}
 
-We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as usual.
+We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as expected.
 
 \paragraph{Channels}
-We define |Send o|, |Recv o|, and |End o|, which decorate the raw sessions from~\cref{sec:sesh} with the priority |o| of the communication action, \ie, when does the communication happen? Duality (|Dual|) preserves these priorities. Operationally, these types are mere wrappers.
+We define |Send o|, |Recv o|, and |End o|, which decorate the \emph{raw} sessions from~\cref{sec:sesh} with the priority |o| of the communication action, \ie, it denoted when the communication happens. Duality (|Dual|) preserves these priorities. Operationally, these types are mere wrappers.
 
 \paragraph{The communication monad}
-We define a graded monad |Sesh p q|, which decorates |Linear.IO| with a lower bound |p| and an upper bound |q| on the priorities of its communication actions, \ie, if you run the monad, when does communication begin and end?
+We define a graded monad |Sesh p q|, which decorates |Linear.IO| with a lower bound |p| and an upper bound |q| on the priorities of its communication actions, \ie, if you run the monad, it denotes when communication begins and ends.
 
 \begin{spec}
 newtype Sesh p q a = MkSesh { runSeshIO :: Linear.IO a }
