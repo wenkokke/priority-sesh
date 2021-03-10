@@ -13,7 +13,7 @@
 
 \begin{document}
 
-\title{Session Types with Priority in Linear Haskell}
+\title{Deadlock-Free Session Types in Linear Haskell}
 
 \author{Wen Kokke}
 \affiliation{%
@@ -21,6 +21,14 @@
   \city{Edinburgh}
   \country{Scotland}}
 \email{wen.kokke@@ed.ac.uk}
+
+\author{Ornela Dardha}
+\affiliation{%
+  \institution{University of Glasgow}
+  \city{Glasgow}
+  \country{Scotland}}
+\email{ornela.dardha@@glasgow.ac.uk}
+
 
 \begin{abstract}
 	To be written last\dots
