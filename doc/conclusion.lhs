@@ -1,15 +1,4 @@
 \section{Conclusion, Related and Future work}
-
-\todo{%
-  Comparison with other session types in PL:
-  \emph{(i)} runtime checking of linearity;
-  \emph{(ii)} static checking of linearity;
-  \emph{(iii)} guarantee via an external tool, such as Scribble.}
-\todo{%
-  Checking deadlock freedom:
-  - deadlock freedom via tree structure in~\citet{kokke19};
-  - deadlock freedom via priorities in SILL [Balzer and Pfenning 2019].}
-
 \paragraph{Session types in Haskell}
 
 \citet{orchardyoshida17} discuss various approaches to implementing session types in Haskell. Their overview is reproduced below:

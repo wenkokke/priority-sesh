@@ -27,3 +27,6 @@
 	existing programming language ever (other implementations use deadlock freedom
 	via tree structure~\cite{lindleymorris16,kokke19}).
 \end{itemize}
+
+
+(1) using linear haskell to make session types in haskell manageable, and (2) checking priorities
