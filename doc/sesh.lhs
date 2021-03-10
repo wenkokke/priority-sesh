@@ -4,7 +4,15 @@
 
 \section{What is Priority Sesh?}\label{sec:main}
 
-We introduce Priority Sesh in three steps: in~\cref{sec:one-shot}, we build a small library of \emph{linear} or \emph{one-shot channels} based on MVars~\cite{peytonjonesgordon96}; in~\cref{sec:sesh}, we use these one-shot channels to build a small library of \emph{session-typed channels} \cite{dardhagiachino12}; and in~\cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
+In this section we introduce Priority Sesh in three steps:
+\begin{enumerate}
+\item
+in~\cref{sec:one-shot}, we build a small library of \emph{linear} or \emph{one-shot channels} based on MVars~\cite{peytonjonesgordon96};
+\item
+in~\cref{sec:sesh}, we use these one-shot channels to build a small library of \emph{session-typed channels} \cite{dardhagiachino12}; and
+\item
+in~\cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
+\end{enumerate}
 
 Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://github.com/tweag/linear-base/}} (\eg, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|). For clarity, we refer to the linear |IO| monad from \texttt{linear-base} as |Linear.IO|.
 
@@ -15,9 +23,11 @@ We colour the Haskell definitions which are a part of Sesh:
 \item[\cs{emerald}] for priorities and type families acting on priorities.
 \end{itemize*}
 
-\subsection{One-shot channels}\label{sec:one-shot}
+\subsection{Library of one-shot channels}\label{sec:one-shot}
 
-We start by building a small library of \emph{linear} or \emph{one-shot channels}, \ie, channels over which a value must be sent or received \emph{exactly once}.
+We start by building a small library of \emph{linear} or \emph{one-shot channels}, \ie, channels that must be use \emph{exactly once} to send or receive a value.
+
+It is important to notice that the meaning of linearity in this section differs from linearity for session types. A linear or one-shot channel is the based on linear channels in the linear $\pi$-calculus \cite{KPT99} where a channel must be used exactly one for an action; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence by following the structure of the declared session type.
 
 The one-shot channels are at the core of our library, and their efficiency is crucial to the overall efficiency of Priority Sesh. However, we do not aim to present an efficient implementation here. Rather, we aim to present a compact implementation with the correct behaviour.
 
@@ -82,7 +92,7 @@ consumeAndSend = do u
 \end{spec}
 \end{minipage}%
 \end{center}
-(Where |fork| forks off a new thread using a linear |forkIO|.)
+Where |fork| forks off a new thread using a linear |forkIO|.
 
 As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even happen when a channel is dropped for reasons other than consume, such as a process crashing.
 
