@@ -1,9 +1,10 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE GADTs                   #-}
+{-# LANGUAGE LinearTypes             #-}
+{-# LANGUAGE NoImplicitPrelude       #-}
+{-# LANGUAGE RebindableSyntax        #-}
+{-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE RebindableSyntax #-}
 
 module Control.Concurrent.Linear
   ( ThreadId

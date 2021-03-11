@@ -2,9 +2,9 @@ module Main where
 
 import           Test.HUnit
 import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
-import qualified Control.Concurrent.OneShot.Linear.Test as OneShot
-import qualified Control.Concurrent.Session.Raw.Linear.Test as Raw
-import qualified Control.Concurrent.Session.Linear.Test as Session
+import qualified Test.OneShot as OneShot
+import qualified Test.Session as Session
+import qualified Test.Session.Priority as Priority
 
 main :: IO Counts
 main = runTestTT tests
@@ -13,12 +13,12 @@ main = runTestTT tests
     tests = TestList
       [ OneShot.pingWorks    -- Basic.
       , OneShot.cancelWorks  -- Cancellation.
-      , Raw.pingWorks        -- Basic.
-      , Raw.calcWorks        -- Choice.
-      , Raw.cancelWorks      -- Cancellation.
-      , Raw.sumWorks         -- Recursion.
-      , Raw.schedWorks       -- Cyclic structure.
       , Session.pingWorks    -- Basic.
       , Session.calcWorks    -- Choice.
       , Session.cancelWorks  -- Cancellation.
+      , Session.sumWorks     -- Recursion.
+      , Session.schedWorks   -- Cyclic structure.
+      , Priority.pingWorks   -- Basic.
+      , Priority.calcWorks   -- Choice.
+      , Priority.cancelWorks -- Cancellation.
       ]

@@ -23,18 +23,17 @@ library
     Control.Concurrent.MVar.Linear
     Control.Concurrent.OneShot.Linear
     Control.Concurrent.Session.Linear
-    Control.Concurrent.Session.Raw.Linear
-  other-modules:
-    GHC.TypeLits.Extra
+    Control.Concurrent.Session.DF.Tree.Linear
+    Control.Concurrent.Session.DF.Priority.Linear
+    Data.Type.Nat
+    Data.Type.Priority
   hs-source-dirs:
     src
   build-depends:
-    base        >=4.7 && <5,
-    linear-base >=0.1 && <0.2
+    base                 >=4.7 && <5,
+    linear-base          >=0.1 && <0.2
   default-language:
     Haskell2010
-  default-extensions:
-    LinearTypes
 
 test-suite test-priority-sesh
   type:
@@ -43,19 +42,16 @@ test-suite test-priority-sesh
     Test.hs
   other-modules:
     Test.HUnit.Linear
-    Control.Concurrent.OneShot.Linear.Test
-    Control.Concurrent.Session.Linear.Test
-    Control.Concurrent.Session.Raw.Linear.Test
-    System.IO.Silently.Linear
+    Test.OneShot
+    Test.Session
+    Test.Session.Priority
   hs-source-dirs:
     test
   build-depends:
-    base        >=4.7 && <5,
-    HUnit       >=1.6 && <2,
-    linear-base >=0.1 && <0.2,
-    silently    >=1.2 && <2,
+    base                    >=4.7 && <5,
+    HUnit                   >=1.6 && <1.7,
+    linear-base             >=0.1 && <0.2,
+    silently                >=1.2 && <2.0,
     priority-sesh
   default-language:
     Haskell2010
-  default-extensions:
-    LinearTypes

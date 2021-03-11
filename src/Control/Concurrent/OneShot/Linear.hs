@@ -1,7 +1,5 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LinearTypes #-}
 {-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Control.Concurrent.OneShot.Linear
   -- One-shot channels
@@ -16,6 +14,7 @@ module Control.Concurrent.OneShot.Linear
   , sync
   ) where
 
+import qualified Prelude
 import           Prelude.Linear
 import           Control.Concurrent.Linear
 import           Control.Concurrent.MVar.Linear

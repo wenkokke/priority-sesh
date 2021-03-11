@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
 
-module Control.Concurrent.OneShot.Linear.Test where
+module Test.OneShot where
 
 import           Control.Concurrent.Linear
 import           Control.Concurrent.OneShot.Linear
@@ -42,4 +42,3 @@ cancelWorks = TestLabel "cancel" $ TestList
       (chan_s, chan_r) <- new
       void $ forkIO (return (consume chan_r))
       send chan_s ()
-

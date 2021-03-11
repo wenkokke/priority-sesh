@@ -1,3 +1,5 @@
+{-# LANGUAGE LinearTypes #-}
+
 module Control.Concurrent.MVar.Linear
   ( MVar
   , newEmptyMVar

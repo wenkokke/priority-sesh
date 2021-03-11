@@ -9,10 +9,10 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Control.Concurrent.Session.Raw.Linear.Test where
+module Test.Session where
 
 import           Control.Concurrent.Linear
-import           Control.Concurrent.Session.Raw.Linear
+import           Control.Concurrent.Session.Linear
 import           Control.Functor.Linear
 import           Data.Bifunctor.Linear
 import           Data.Functor.Linear (void)

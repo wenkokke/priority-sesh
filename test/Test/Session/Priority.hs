@@ -1,5 +1,5 @@
-{-# OPTIONS -fno-warn-partial-type-signatures #-}
-{-# OPTIONS -fno-warn-name-shadowing #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -13,13 +13,16 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Control.Concurrent.Session.Linear.Test where
+module Test.Session.Priority where
 
-import Control.Concurrent.Session.Linear as Session
-import GHC.TypeLits (type (+))
-import Prelude.Linear hiding (Min, Max, Dual)
-import Test.HUnit
-import Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
+import           Control.Concurrent.Session.DF.Priority.Linear as Session
+import           Control.Functor.Linear (Functor(..), (<$>))
+import           Data.Bifunctor.Linear
+import           Data.Type.Nat as Nat (Nat(..), type (+))
+import           Data.Type.Priority as Priority (Priority(..), type (<), type Min, type Max)
+import           Prelude.Linear hiding (Min, Max, Dual)
+import           Test.HUnit
+import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
 
 
 -- * Rebind do-notation to Sesh "monad"
@@ -55,13 +58,13 @@ pingWorks = TestLabel "ping" $ TestCase (assert (runSeshIO main))
 
     ping :: Ping t %1 -> _
     ping s = do
-      s <- send @0 ((), s)
-      close @1 s
+      s <- send ((), s)
+      close s
 
     pong :: Pong t %1 -> _
     pong s = do
-      ((), s) <- recv @0 s
-      close @1 s
+      ((), s) <- recv s
+      close s
 
 
 -- * Calculator
@@ -141,7 +144,7 @@ cancelWorks = TestLabel "cancel" $ TestList
       return ()
 
 
--- * Deadlock (does not compile)
+-- * Deadlock (does not compile, rightfully)
 
 -- deadlockFails :: Test
 -- deadlockFails = TestLabel "deadlock" $ TestCase (assert (runSeshIO deadlock))
@@ -160,46 +163,30 @@ cancelWorks = TestLabel "cancel" $ TestList
 --       close @1 s1
 
 
--- * Summation
-{-
-newtype SumServer t o
-  = SumServer (Offer t o
-               (Recv t (o + 1) Int (SumServer t (o + 2)))
-               (Send t (o + 1) Int (End t (o + 2))))
+-- * Pipe (does not compile, wrongfully)
 
-newtype SumClient t o
-  = SumClient (Select t o
-               (Send t (o + 1) Int (SumClient t (o + 2)))
-               (Recv t (o + 1) Int (End t (o + 2))))
-
-instance Consumable (SumServer t o) where
-  consume (SumServer s) = consume s
-
-instance Consumable (SumClient t o) where
-  consume (SumClient s) = consume s
-
-instance Session (SumServer t o) where
-  type Dual (SumServer t o) = SumClient t o
-  type Raw  (SumServer t o) = Offer t o
-                              (Recv t (o + 1) Int (SumServer t (o + 2)))
-                              (Send t (o + 1) Int (End t (o + 2)))
-  toRaw (SumServer s) = s
-  fromRaw s = SumServer s
-
-instance Session (SumClient t o) where
-  type Dual (SumClient t o) = SumServer t o
-  type Raw  (SumClient t o) = Select t o
-                              (Send t (o + 1) Int (SumClient t (o + 2)))
-                              (Recv t (o + 1) Int (End t (o + 2)))
-  toRaw (SumClient s) = s
-  fromRaw s = SumClient s
-
-
-{-
-ewtype Sum t o
-  = Sum (Offer t o
-(Recv t (o + 1) Int (Sum t (o + 2)))
-          (Send t (o + 1) Int (End t (o + 2))))
+-- newtype In t o = In (Recv t o Int (In t (2 + o)))
+-- newtype Out t o = Out (Send t o Int (Out t (2 + o)))
+--
+-- instance Consumable (In t o) where
+--   consume (In s) = consume s
+--
+-- instance Consumable (Out t o) where
+--   consume (Out s) = consume s
+--
+-- instance Session (In t o) where
+--   type Dual (In t o) = Out t o
+--   new = bimap In Out <$> new
+--
+-- instance Session (Out t o) where
+--   type Dual (Out t o) = In t o
+--   new = bimap Out In <$> new
+--
+-- pipe :: forall o t. In t o %1 -> Out t (1 + o) %1 -> Sesh t ('Val o) 'Top ()
+-- pipe (In ch_r) (Out ch_s) = do
+--   (x, ch_r) <- recv @o ch_r
+--   ch_s <- send @(1 + o) (x, ch_s)
+--   pipe @(2 + o) ch_r ch_s
 
 -- -}
 -- -}
