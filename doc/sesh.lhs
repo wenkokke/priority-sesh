@@ -325,7 +325,7 @@ type Select o  s_1 s_2 = Send o  (Either (Dual s_1) (Dual s_2)) ()
 type Offer o   s_1 s_2 = Recv o  (Either s_1 s_2) ()
 
 selectLeft   ::  (Session s_1) => Select o s_1 s_2 %1 -> Sesh (Val o) (Val o) s_1
-offerEither  ::  (Val o < p) => Offer o s_1 s_2 %1 ->
+offerEither  ::  (LT (Val o) p) => Offer o s_1 s_2 %1 ->
                  (Either s_1 s_2 %1 -> Sesh p q a) %1 -> Sesh (Min (Val o) p) (Max (Val o) q) a
 \end{spec}
 
@@ -341,8 +341,37 @@ We can then safely define a pure variant of |runSeshIO|:
   runSesh :: (forall tok. Sesh p q tok a) %1 -> a
   runSesh x = unsafePerformIO (runSeshIO x)
 \end{spec}
-Our library implements this encapsulation, though the order of arguments presented here is slightly different for typographical reasons.
+Our library implements this encapsulation, though the session token is the first argument, preceding the priority bounds.
 
 \paragraph{Recursion}
 \todo{%
 	We can write priority-polymorphic types and use those to implement recursive sessions, or we can use priority-shifting \`a la~\citet{padovaninovara15}.}
+
+\paragraph{Cyclic Scheduler}
+\todo{%
+  We can write a \emph{non-recursive} variant of the cyclic scheduler (cf. all the papers).}
+
+\begin{spec}
+type SR o_1 o_2 a = Send o1 a (Recv o_2 a ())
+type RS o_1 o_2 a = Dual (SR o1 o_2 a)
+\end{spec}
+
+\begin{spec}
+sched4 :: RS 0 7 a %1 -> SR 1 2 a %1 -> SR 3 4 a %1 -> SR 5 6 a %1 -> Sesh (Val 0) (Val 7) ()
+sched4 s1 s2 s3 s4 = do
+  (x, s1) <- recv s1
+  s2 <- send (x, s2); (x, ()) <- recv s2
+  s3 <- send (x, s3); (x, ()) <- recv s3
+  s4 <- send (x, s4); (x, ()) <- recv s4
+  send (x, s1)
+\end{spec}
+
+\begin{spec}
+add1 :: (LT (Val o_1) (Val o_2)) => RS o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) ()
+add1 s = do (x, s) <- recv s; send (x + 1, s)
+\end{spec}
+
+\begin{spec}
+main :: (LT (Val o_1) (Val o_2)) => Int %1 -> SR o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) Int
+main x s = do; s <- send (x, s); (x, ()) <- recv s; return x
+\end{spec}

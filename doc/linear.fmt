@@ -16,8 +16,8 @@
 %
 %if style /= newcode
 %
-%format %              = percent_ "\hsPercentCmd "
-%format 1              = one_ "\hsOneCmd "
+%format %              = "\hsPercent "
+%format 1              = "\hsOne "
 %format \              = lambda_ "\hsLambdaCmd "
 %format ->             = "\hsArrow{" `arrow_` "}{" `lineararrow_` "}{" lambdaperiod_ "}"
 %format forall(x)      = forall_ x "\hsForallCmd "
@@ -49,9 +49,10 @@
 \newcommand*\hsUnrestrictedArrow[3]{#1}
 \newcommand*\hsLinearArrow[3]{#2\global\let\hsArrow=\hsUnrestrictedArrow}
 \newcommand*\hsLambdaPeriod[3]{#3\global\let\hsArrow=\hsUnrestrictedArrow}
-\newcommand\hsPercentCmd{\global\let\hsOneCmd=\hsOneAfterPercentCmd}
+\newcommand\hsPercent{%
+  \global\let\hsOne=\hsOneAfterPercentCmd}
 \newcommand*\hsOneAfterPercentCmd{%
-  \global\let\hsOneCmd=\hsNoOp
+  \global\let\hsOne=1
   \global\let\hsArrow=\hsLinearArrow}
 \newcommand\hsLambdaCmd{\global\let\hsArrow=\hsLambdaPeriod}
 \newcommand\hsForallCmd{\global\let\hsDot=\hsPeriod}
@@ -59,7 +60,7 @@
 \newcommand\hsCompose[2]{#1}
 
 \AtHaskellReset{%
-  \global\let\hsOneCmd=\hsNoOp
+  \global\let\hsOne=1
   \global\let\hsArrow=\hsUnrestrictedArrow
 	\global\let\hsDot=\hsCompose}
 

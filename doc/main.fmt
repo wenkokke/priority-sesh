@@ -5,8 +5,6 @@
 %format Delta        = "\Delta"
 %format ~            = "\sim"
 %format <$>          = "\fmap"
-%format percent_     = "\empty"
-%format one_         = "\empty"
 %
 %%% One-shot channels
 %
@@ -63,6 +61,8 @@
 %
 %%% Priority Sesh
 %
+%format o_1          = o "_{1}"
+%format o_2          = o "_{2}"
 %format s_1          = s "_{1}"
 %format s_2          = s "_{2}"
 %format k_1          = k "_{1}"
@@ -70,6 +70,8 @@
 %format Priority     = "\ty{\Conid{Priority}}"
 %format Val o        = o
 %format Sesh (p) (q) = "\seshtymon{" p "}{" q "}"
+%format SR (p) (q)   = "\seshtySR{" p "}{" q "}"
+%format RS (p) (q)   = "\seshtyRS{" p "}{" q "}"
 %format MkSesh       = "\tm{\Conid{Sesh}}"
 %format runSesh      = "\tm{\Varid{runSesh}}"
 %format runSeshIO    = "\tm{\Varid{runSeshIO}}"
