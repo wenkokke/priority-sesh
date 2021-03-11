@@ -17,8 +17,9 @@ main = runTestTT tests
       , Session.calcWorks    -- Choice.
       , Session.cancelWorks  -- Cancellation.
       , Session.sumWorks     -- Recursion.
-      , Session.schedWorks   -- Cyclic structure.
+      , Session.schedWorks   -- Cyclic structure (recursive).
       , Priority.pingWorks   -- Basic.
       , Priority.calcWorks   -- Choice.
       , Priority.cancelWorks -- Cancellation.
+      , Priority.schedWorks  -- Cyclic structure (non-recursive).
       ]

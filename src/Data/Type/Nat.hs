@@ -1,7 +1,8 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE NoStarIsType         #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Type.Nat
@@ -10,6 +11,7 @@ module Data.Type.Nat
   , type Max
   , type Min
   , type (+)
+  , type (*)
   , type (<)
   ) where
 
@@ -19,7 +21,7 @@ module Data.Type.Nat
 
 import Data.Type.Equality (type (==))
 import Data.Type.Bool (If)
-import GHC.TypeNats (Nat(..), CmpNat, type (<=?), type (+))
+import GHC.TypeNats (Nat(..), CmpNat, type (<=?), type (+), type (*))
 
 type S n = 1 + n
 
@@ -34,14 +36,17 @@ type N7 = 7
 type N8 = 8
 type N9 = 9
 
+infix  4 <
+infixl 9 `Min`, `Max`
+
 -- | Type-level '<' as a constraint
 type (m :: Nat) < (n :: Nat) = CmpNat m n ~ 'LT
 
 -- | Type-level 'max'
-type Max (m :: Nat) (n :: Nat) = If (m <=? n) n m
+type Max (m :: Nat) (n :: Nat) = If (CmpNat m n == 'LT) n m
 
 -- | Type-level 'min'
-type Min (m :: Nat) (n :: Nat) = If (m <=? n) m n
+type Min (m :: Nat) (n :: Nat) = If (CmpNat m n == 'LT) m n
 
 -- -}
 

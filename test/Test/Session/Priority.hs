@@ -1,17 +1,19 @@
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE LinearTypes #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE LinearTypes           #-}
+{-# LANGUAGE NoStarIsType          #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE RebindableSyntax #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RebindableSyntax      #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Test.Session.Priority where
 
@@ -20,6 +22,7 @@ import           Control.Functor.Linear (Functor(..), (<$>))
 import           Data.Bifunctor.Linear
 import           Data.Type.Nat as Nat (Nat(..), type (+))
 import           Data.Type.Priority as Priority (Priority(..), type (<), type Min, type Max)
+import           Data.Void (Void)
 import           Prelude.Linear hiding (Min, Max, Dual)
 import           Test.HUnit
 import           Test.HUnit.Linear (assertBlockedIndefinitelyOnMVar)
@@ -149,19 +152,69 @@ cancelWorks = TestLabel "cancel" $ TestList
 -- deadlockFails :: Test
 -- deadlockFails = TestLabel "deadlock" $ TestCase (assert (runSeshIO deadlock))
 --   where
---     deadlock :: Sesh t 'Top ('Val 3) ()
+--     deadlock :: Sesh t _ _ ()
 --     deadlock = do
---       (s1, r1) <- new
---       (s2, r2) <- new
---       fork $ do ((), r1) <- recv @0 r1
---                  close @1 r1
---                  s2 <- send @2 ((), s2)
---                  close @3 s2
---       ((), r2) <- recv @2 r2
---       close @3 r2
---       s1 <- send @0 ((), s1)
---       close @1 s1
+--       (s1, r1) <- new :: Sesh t _ _ (Send t _ Void (), Recv t _ Void ())
+--       (s2, r2) <- new :: Sesh t _ _ (Send t _ Void (), Recv t _ Void ())
+--       fork $ do (void, ()) <- recv @0 r1
+--                 send @1 (void, s2)
+--       (void, ()) <- recv @0 r2
+--       send @1 (void, s1)
 
+
+-- * Cyclic scheduler
+
+type SR t o1 o2 a = Send t o1 a (Recv t o2 a ())
+type RS t o1 o2 a = Dual (SR t o1 o2 a)
+
+schedNode3 ::
+  RS t 0 7 a %1 ->
+  SR t 1 2 a %1 ->
+  SR t 3 4 a %1 ->
+  SR t 5 6 a %1 ->
+  Sesh t ('Val 0) ('Val 7) ()
+schedNode3 s1 s2 s3 s4 = do
+  (x, s1) <- recv s1
+  s2 <- send (x, s2)
+  (x, ()) <- recv s2
+  s3 <- send (x, s3)
+  (x, ()) <- recv s3
+  s4 <- send (x, s4)
+  (x, ()) <- recv s4
+  send (x, s1)
+
+add1Node ::
+  ('Val o1 < 'Val o2) =>
+  RS t o1 o2 Int %1 ->
+  Sesh t ('Val o1) ('Val o2) ()
+add1Node s = do
+  (x, s) <- recv s
+  send (x + 1, s)
+
+mainNode ::
+  ('Val o1 < 'Val o2) =>
+  Int %1 ->
+  Int %1 ->
+  SR t o1 o2 Int %1 ->
+  Sesh t ('Val o1) ('Val o2) Bool
+mainNode x y s = do
+  s <- send (x, s)
+  (x, ()) <- recv s
+  return $ x == y
+
+schedWorks :: Test
+schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO main))
+  where
+    main = do
+      (sr1, rs1) <- new
+      (sr2, rs2) <- new
+      (sr3, rs3) <- new
+      (sr4, rs4) <- new
+      fork $ schedNode3 rs1 sr2 sr3 sr4
+      fork $ add1Node rs2
+      fork $ add1Node rs3
+      fork $ add1Node rs4
+      mainNode 0 3 sr1
 
 -- * Pipe (does not compile, wrongfully)
 
