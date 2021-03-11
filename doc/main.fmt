@@ -29,6 +29,7 @@
 %format mvar_r2      = mvar "_{r2}"
 %format ch_s       = ch "_{s}"
 %format ch_r       = ch "_{r}"
+%format ch_sync    = ch "_{" sync "}"
 %format ch_s1      = ch "_{s1}"
 %format ch_r1      = ch "_{r1}"
 %format ch_s2      = ch "_{s2}"
@@ -42,6 +43,8 @@
 %format MkRawSend    = "\tm{\Conid{Send}}"
 %format MkRawRecv    = "\tm{\Conid{Recv}}"
 %format MkRawEnd     = "\tm{\Conid{End}}"
+%format RawSelect    = "\seshtysel"
+%format RawOffer     = "\seshtyoff"
 %format Session      = "\ty{\Conid{Session}}"
 %format Dual         = "\ty{\Conid{Dual}}"
 %format ireturn      = "\tm{\Varid{ireturn}}"
@@ -60,10 +63,15 @@
 %
 %%% Priority Sesh
 %
+%format s_1          = s "_{1}"
+%format s_2          = s "_{2}"
+%format k_1          = k "_{1}"
+%format k_2          = k "_{2}"
 %format Priority     = "\ty{\Conid{Priority}}"
 %format Val o        = o
 %format Sesh (p) (q) = "\seshtymon{" p "}{" q "}"
 %format MkSesh       = "\tm{\Conid{Sesh}}"
+%format runSesh      = "\tm{\Varid{runSesh}}"
 %format runSeshIO    = "\tm{\Varid{runSeshIO}}"
 %format Send o       = "\seshtysend[\cs{" o "}]"
 %format Recv o       = "\seshtyrecv[\cs{" o "}]"
@@ -80,6 +88,11 @@
 %format LT  (p) (q)  = "\cs{" p "}" `LT` "\cs{" q "}"
 %format Min (p) (q)  = "\cs{" p "}" `Min` "\cs{" q "}"
 %format Max (p) (q)  = "\cs{" p "}" `Max` "\cs{" q "}"
+%format Select o     = "\seshtysel[\cs{" o "}]"
+%format Offer o      = "\seshtyoff[\cs{" o "}]"
+%format offerEither  = "\tm{\Varid{offerEither}}"
+%format selectLeft   = "\tm{\Varid{selectLeft}}"
+%format selectRight  = "\tm{\Varid{selectRight}}"
 %
 %%% Translation from PGV to Sesh
 %

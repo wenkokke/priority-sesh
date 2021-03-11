@@ -93,7 +93,10 @@ runSeshIO :: forall p q a. (forall t. Sesh t p q a) -> Linear.IO a
 runSeshIO mx = unsafeRunSesh mx
 
 runSesh :: forall p q a. (forall t. Sesh t p q a) -> a
-runSesh mx = let (Sesh x) = mx in unsafePerformIO (Unsafe.coerce x)
+runSesh mx = unsafePerformIO (toSystemIO (runSeshIO mx))
+  where
+    toSystemIO :: Linear.IO a %1 -> IO a
+    toSystemIO = Unsafe.coerce
 
 ibind :: forall p q p' q' a b t. (q < p') =>
   (a %1 -> Sesh t p' q' b) %1 ->
@@ -238,7 +241,7 @@ selectRight s =
   ireturn here
 
 offerEither :: forall o p q s1 s2 a t.
-  (Session s1, Session s2, 'Bot < p, 'Val o < p) =>
+  (Session s1, Session s2, Val o < p) =>
   Offer t o s1 s2 %1 ->
   (Either s1 s2 %1 -> Sesh t p q a) %1 ->
   Sesh t (Min ('Val o) p) (Max ('Val o) q) a
