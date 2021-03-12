@@ -51,7 +51,10 @@ newtype End      = End OneShot.SyncOnce
 
 -- * Duality and session initiation
 
-class (Consumable s, Session (Dual s), Dual (Dual s) ~ s) => Session s where
+class ( Consumable s
+      , Session (Dual s)
+      , Dual (Dual s) ~ s
+      ) => Session s where
   type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
 

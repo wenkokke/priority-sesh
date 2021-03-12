@@ -6,9 +6,9 @@
 
 In this section we introduce Priority Sesh in three steps:
 \begin{itemize}
-\item in~\cref{sec:one-shot}, we build a small library of \emph{linear} or \emph{one-shot channels} based on MVars~\cite{peytonjonesgordon96};
-\item in~\cref{sec:sesh}, we use these one-shot channels to build a small library of \emph{session-typed channels} \cite{dardhagiachino12}; and
-\item in~\cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
+\item in \cref{sec:one-shot}, we build a small library of \emph{linear} or \emph{one-shot channels} based on MVars~\cite{peytonjonesgordon96};
+\item in \cref{sec:sesh}, we use these one-shot channels to build a small library of \emph{session-typed channels} \cite{dardhagiachino12}; and
+\item in \cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
 \end{itemize}
 
 It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel comes from the linear $\pi$-calculus \cite{KPT99} where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of the declared session type.
@@ -22,7 +22,7 @@ We colour the Haskell definitions which are a part of Sesh:
 \item[\cs{emerald}] for priorities and type families acting on priorities.
 \end{itemize*}
 
-\subsection{Library of one-shot channels}\label{sec:one-shot}
+\subsection{One-shot channels}\label{sec:one-shot}
 
 We start by building a small library of \emph{linear} or \emph{one-shot channels}, \ie, channels that must be use \emph{exactly once} to send or receive a value.
 
@@ -94,7 +94,7 @@ Where |fork| forks off a new thread using a linear |forkIO|.
 As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even happen when a channel is dropped for reasons other than consume, such as a process crashing.
 
 
-\subsection{Library of session-typed channels}\label{sec:sesh}
+\subsection{Session-typed channels}\label{sec:sesh}
 We now use the one-shot channels to build a small library of \emph{session-typed channels}.
 
 \paragraph{An example}
@@ -237,52 +237,140 @@ selectLeft s = do  (here, there) <- new
                    send (Left there, s)
                    return here
 
-offerEither ::  Offer o s_1 s_2 %1 -> (Either s_1 s_2 %1 -> IO a) %1 -> IO a
+offerEither ::  RawOffer s_1 s_2 %1 -> (Either s_1 s_2 %1 -> IO a) %1 -> IO a
 offerEither s match = do (e, ()) <- recv s; match e
 \end{spec}
 Differently from |()|, we don't have to implement the |Session| class for |RawSelect| and |RawOffer|. They're already session types!
 
 \paragraph{Recursion}
-\todo{%
-  We can write recursive sesion types by relying on Haskell's |newtype|s.
-}
-
+We can write recursive session types by writing them as recursive Haskell types. Unfortunately, we cannot write recursive type synonyms, so we have to use a newtype. For instance, we can write the type for a recursive summation service, which receives numbers until the client indicates they're done, and then sends back the sum. We specify \emph{two} newtypes:
 \begin{spec}
-newtype Sum = Sum (RawOffer (RawRecv Int Sum) (RawSend Int RawEnd))
-
-sumServer :: Int %1 -> Sum %1 -> IO ()
-sumServer tot (Sum s) = offerEither s $ \e -> case x of
-  Left   s -> do (x, s) <- recv s; sumServer (tot + x) s
+newtype SumSrv
+  = MkSumSrv (RawOffer (RawRecv Int SumSrv) (RawSend Int RawEnd))
+newtype SumCnt
+  = MkSumCnt (RawSelect (RawSend Int SumCnt) (RawRecv Int RawEnd))
+\end{spec}
+We implement the summation server as a recursive function:
+\begin{spec}
+sumSrv :: Int %1 -> SumSrv %1 -> IO ()
+sumSrv tot (MkSumSrv s) = offerEither s $ \e -> case x of
+  Left   s -> do (x, s) <- recv s; sumSrv (tot + x) s
   Right  s -> do s <- send (tot, s); close s
+\end{spec}
+As |SumSrv| and |SumCnt| are new types, we must provide instances of the |Session| class for them.
+\begin{spec}
+instance Session SumSrv
+  where
+    type Dual SumSrv = SumCnt
+    new = bimap MkSumSrv MkSumCnt <$> new
 \end{spec}
 
 
-\paragraph{Deadlock freedom}
+\subsection{Deadlock freedom via structure}\label{sec:tree-sesh}
+The session-typed channels presented in \cref{sec:sesh} can be used to write deadlocking programs:
+\begin{spec}
+woops :: IO Void
+woops = do  (ch_s1, ch_r1) <- new
+            (ch_s2, ch_r2) <- new
+            fork $ do  (void, ()) <- recv ch_r1
+                       send (void, ch_s2)
+            (void, ()) <- recv ch_r2
+            let (void, void_copy) = dup2 void
+            send (void, ch_s1)
+            return void_copy
+\end{spec}
+Counter to what the type says, this program doesn't actually produce an inhabitant for |Void|. Instead, it deadlocks! We'd like to help the programming avoid such programs.
 
-\todo{%
-	The session-typed channels as presented thus far can be used to write deadlocking programs. There's two ways of ruling out deadlocking programs. First, we can limit programs by ensuring that there's always \emph{at most} one way to get a message from one channel to another. We can do this by hiding |new| and only exposing |connect|, which creates a new channel and \emph{immediately} shares it between two threads. This one's simple, but it's inexpressive. The other option is priorities, which we discuss in~\cref{sec:priority-sesh}.}
+As discussed in \cref{sec:introduction}, we can \emph{structurally} guarantee deadlock freedom by ensuring that the \emph{process structure} is always a tree or forest. The process structure of a program is an undirected graph, where nodes represent processes, and edges represent the channels connecting them. For instance, the process structure of |woops| is cyclic:
+\begin{center}
+\begin{tikzpicture}
+  \node[draw, minimum size=1cm] (x) {$\Varid{main}$};
+  \node[draw, minimum size=1cm, right=3cm of x] (y) {$\Varid{child}$};
+  \path
+  (x) edge[bend left=20]
+      node[pos=0.2,above] {$\Varid{ch}_{\Varid{s1}}$}
+      node[pos=0.8,above] {$\Varid{ch}_{\Varid{r1}}$}
+  (y);
+  \path
+  (y) edge[bend left=20]
+      node[pos=0.2,below] {$\Varid{ch}_{\Varid{s2}}$}
+      node[pos=0.8,below] {$\Varid{ch}_{\Varid{r2}}$}
+  (x);
+\end{tikzpicture}
+\end{center}
+This restriction works by ensuring that between two processes there is \emph{at most} one (series of) channels over which the two can communicate. As duality rules out deadlocks on any one channel, such configurations must be deadlock free.
 
+We can rule out cyclic process structures by hiding |new|, and only exporting |connect|, which creates a new channel and, \emph{crucially}, immediately passes one endpoint to a new thread:
 \begin{spec}
 connect ::  Session s =>
             (s %1 -> IO ()) %1 -> (Dual s %1 -> IO a) %1 -> IO a
 connect k_1 k_2 = do (s_1, s_2) <- new; fork (k_1 s_1); k_2 s_2
 \end{spec}
+You can view |connect| as the node constructor for a binary process tree. If the programmer \emph{only} uses |connect|, their process structure is guaranteed to be a \emph{tree}. If they also use standalone |fork|, their process structure is a \emph{forest}. Either way, their programs are guaranteed to be deadlock free.
 
 
-\subsection{Session-typed channels with priority}\label{sec:priority-sesh}
-We conclude by decorating the session-typed channels with \emph{priorities} to ensure deadlock freedom.
+\subsection{Deadlock freedom via priorities}\label{sec:priority-sesh}
+The strategy for deadlock freedom presented in \cref{sec:tree-sesh} is simple, but \emph{very} restrictive, since it rules out \emph{all} cyclic communication structures, even the ones which don't deadlock:
+\begin{spec}
+  totallyFine :: IO String
+  totallyFine = do  (ch_s1, ch_r1) <- new
+                    (ch_s2, ch_r2) <- new
+                    fork $ do  (x, ()) <- recv ch_r1
+                               send (x, ch_s2)
+                    send ("Hiya!", ch_s1)
+                    (x, ()) <- recv ch_r2
+                    return x
+\end{spec}
+This process has \emph{exactly the same} process structure as |woops|, but it's totally fine, and returns |"Hiya!"| you'd expect. We'd like to enable the programmer to write such programs while still being sure their programs don't deadlock.
+
+As discussed in \cref{sec:introduction}, there is another way to rule out deadlocks---by using \emph{priorities}! Priorities are an approximation of the \emph{communication graph} of a program. The communication graph of a program is a \emph{directed graph} where nodes represent \emph{actions on channels}, and directed edges represent that one action happens before the other. Dual actions are connected with double undirected edges. (You may consider the graph contracted along these edges.) If the communication graph is cyclic, the program deadlocks. The communication graphs for |woops| and |totallyFine| are as follows:
+\begin{center}
+  \begin{minipage}{0.5\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \node[draw, minimum size=1cm]                     (ch_s1) {|send ch_s1|};
+      \node[draw, minimum size=1cm, right=1cm of ch_s1] (ch_r1) {|recv ch_r1|};
+      \node[draw, minimum size=1cm, below=1cm of ch_r1] (ch_s2) {|send ch_s2|};
+      \node[draw, minimum size=1cm, below=1cm of ch_s1] (ch_r2) {|recv ch_r2|};
+      \path (ch_s1) edge[double] (ch_r1);
+      \path (ch_s2) edge[double] (ch_r2);
+      \path[->] (ch_r1) edge[bend left=20] (ch_s2);
+      \path[->] (ch_r2) edge[bend left=20] (ch_s1);
+    \end{tikzpicture}
+    \\
+    |woops|
+  \end{minipage}%
+  \begin{minipage}{0.5\linewidth}
+    \centering
+    \begin{tikzpicture}
+      \node[draw, minimum size=1cm]                     (ch_s1) {|send ch_s1|};
+      \node[draw, minimum size=1cm, right=1cm of ch_s1] (ch_r1) {|recv ch_r1|};
+      \node[draw, minimum size=1cm, below=1cm of ch_r1] (ch_s2) {|send ch_s2|};
+      \node[draw, minimum size=1cm, below=1cm of ch_s1] (ch_r2) {|recv ch_r2|};
+      \path (ch_s1) edge[double] (ch_r1);
+      \path (ch_s2) edge[double] (ch_r2);
+      \path[->] (ch_s1) edge[bend right=20] (ch_r2);
+      \path[->] (ch_r1) edge[bend left=20] (ch_s2);
+    \end{tikzpicture}
+    \\
+    |totallyFine|
+  \end{minipage}%
+\end{center}
+If the communication graph is acyclic, then we can assign each node a number such that directed edges only ever point to nodes with \emph{bigger} numbers. For instance, for |totallyFine| we can assign the number |0| to |send ch_s1| and |recv ch_r2|, and |1| to |recv ch_r2| and |send ch_s2|. These numbers are \emph{priorities}.
+
+In this section, we present a type system in which \emph{priorities} are used to ensure deadlock freedom, by tracking the time a process starts and finishes communicating using a graded monad, whose bind operation requires sequentiality.
 
 \paragraph{Priorities}
-Priorities are either |Bot|, a~natural number, or |Top|. A~natural number priority represents abstractly the \emph{time} at which some action happens---the lower the number, the sooner it happens. The values |Top| and |Bot| are used as the identities for |`Min`| and |`Max`| in lower and upper bounds on priorities, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
+The priorities assigned to \emph{communication actions} are always natural numbers, which represent, \emph{abstractly}, at which time the action happens. When tracking the start and finish times of a program, however, we also use |Bot| and |Top| for programs which don't communicate. These are used as the identities for |`Min`| and |`Max`| in lower and upper bounds, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
 
 \begin{spec}
 data Priority = Bot | Val Nat | Top
 \end{spec}
 
-We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as expected.
+We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|) on priorities as usual.
 
 \paragraph{Channels}
-We define |Send o|, |Recv o|, and |End o|, which decorate the \emph{raw} sessions from~\cref{sec:sesh} with the priority |o| of the communication action, \ie, it denoted when the communication happens. Duality (|Dual|) preserves these priorities. Operationally, these types are mere wrappers.
+We define |Send o|, |Recv o|, and |End o|, which decorate the \emph{raw} sessions from \cref{sec:sesh} with the priority |o| of the communication action, \ie, it denoted when the communication happens. Duality (|Dual|) preserves these priorities. These are implemented exactly as in \cref{sec:sesh}.
 
 \paragraph{The communication monad}
 We define a graded monad |Sesh p q|, which decorates |IO| with a lower bound |p| and an upper bound |q| on the priorities of its communication actions, \ie, if you run the monad, it denotes when communication begins and ends.
@@ -306,7 +394,7 @@ The |>>>=| operator sequences two actions with types |Sesh p q| and |Sesh p' q'|
 (>>>=) :: (LT q p') => Sesh p q a %1 -> (a %1-> Sesh p' q' b) %1 -> Sesh (Min p p') (Max q q') b
 mx >>>= mf = MkSesh $ runSeshIO mx >>= \x -> runSeshIO (mf x)
 \end{spec}
-We define similar wrappers for the concurrency and communication primitives:
+We define decorated variants of the concurrency and communication primitives:
 \begin{itemize*}[label=\empty]
 \item |send|, |recv|, and |close| each perform a communication action with some priority |o|, and return a computation of type |Sesh o o|, \ie, with \emph{exact} bounds;
 \item |new|, |fork|, and |cancel| don't perform any communication action, and so return a \emph{pure} computation of type |Sesh Top Bot|.
@@ -319,12 +407,13 @@ send     :: Session s => (a, Send o a s) %1 -> Sesh (Val o) (Val o) s
 recv     :: Recv o a s %1 -> Sesh (Val o) (Val o) (a, s)
 close    :: End o %1 -> Sesh (Val o) (Val o) ()
 \end{spec}
-Similarly, for choice:
+From these, we derive decorated choice, as before:
 \begin{spec}
 type Select o  s_1 s_2 = Send o  (Either (Dual s_1) (Dual s_2)) ()
 type Offer o   s_1 s_2 = Recv o  (Either s_1 s_2) ()
 
 selectLeft   ::  (Session s_1) => Select o s_1 s_2 %1 -> Sesh (Val o) (Val o) s_1
+selectRight  ::  (Session s_2) => Select o s_1 s_2 %1 -> Sesh (Val o) (Val o) s_2
 offerEither  ::  (LT (Val o) p) => Offer o s_1 s_2 %1 ->
                  (Either s_1 s_2 %1 -> Sesh p q a) %1 -> Sesh (Min (Val o) p) (Max (Val o) q) a
 \end{spec}

@@ -58,6 +58,9 @@
 %format withNew      = "\tm{\Varid{withNew}}"
 %format connect      = "\tm{\Varid{connect}}"
 %format quiet        = "\tm{\Varid{quiet}}"
+%format MkSumSrv     = SumSrv
+%format MkSumCnt     = SumCnt
+%format void_copy    = void "_{" copy "}"
 %
 %%% Priority Sesh
 %
