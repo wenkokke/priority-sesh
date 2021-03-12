@@ -54,7 +54,7 @@ Other works of guaranteeing deadlock freedom in session-typed systems include th
 
 
 \paragraph{Conclusion and future work}
-To conclude, in this paper we have presented Priority Sesh, an implementation of deadlock-free session types in Linear Haskell, which is used for the first time here as a target for session types. The pros and cons of using Linear Haskell are:...
+To conclude, in this paper we have presented Priority Sesh, an implementation of deadlock-free session types in Linear Haskell, which is used for the first time here as a target for session types. The pros and cons of using Linear Haskell are:\todo{add pros and cons here}
 We guarantee deadlock freedom in session types by means of \emph{priorities} which are more flexible than previous work on deadlock freedom as they allow cycles of communication and not simply trees.
 
-As future work, we intend to extend the priorities to the recursive par of our implementation. While our raw and tree-structured versions of the library support recursion, that is not the case for the priority-based version which is challenging as it would require type-level reasoning about priorities, which GHC currently cannot fully offer.
+As future work, we intend to extend the priorities to the recursive par of our implementation. While our raw and tree-structured versions of the library support recursion, that is not the case for the priority-based version which is challenging as it would require type-level reasoning about priorities, which GHC currently cannot fully offer. \todo{add more future work?}
