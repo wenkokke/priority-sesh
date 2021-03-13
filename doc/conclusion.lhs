@@ -1,3 +1,7 @@
+%include polycode.fmt
+%include linear.fmt
+%include main.fmt
+
 \section{Conclusion, Related and Future work}
 \paragraph{Session types in Haskell}
 
@@ -27,10 +31,10 @@ Session types have been integrated in other programming language paradigms.
 \citet{JML15,ScalasY16,PadFuse} integrate \emph{binary} session types in the \emph{native} host language, without language extensions; this to avoid hindering session types use in practice.
 To obtain this integration of session types without extensions \citet{ScalasY16,PadFuse}) combine \emph{static} typing of input and output actions with \emph{run-time} checking of linearity of channle usage.
 
-Implementations of multiparty session types (MPST) are less common than binary implementations.  
+Implementations of multiparty session types (MPST) are less common than binary implementations.
 \citet{Scalas2017} integrate MPST in Scala building upon \citet{ScalasY16} and a continuation-passing style encoding of session types into linear types \citet{dardhagiachino12}.
 There are several works on MPST in Java, detailed below.
-\citet{SivaramakrishnanNZE10} implement MPST leveraging an extension of Java with session primitives; 
+\citet{SivaramakrishnanNZE10} implement MPST leveraging an extension of Java with session primitives;
 \citet{HY16} develops a MPST-based API generation for Java leveraging CFSMs by \citet{Brand1983CFM}; and \citet{KDPG16} implement session types in the form of \emph{typestates} in Java.
 \citet{DHHNY2015} implement MPST in Python and \citet{Fowler16,NY2017} in Erlang, focusing on {purely dynamic} MPST verification via run-time monitoring.
 \citet{NY2017A,NBY2017} extend the work by
@@ -54,7 +58,13 @@ Other works of guaranteeing deadlock freedom in session-typed systems include th
 
 
 \paragraph{Conclusion and future work}
-To conclude, in this paper we have presented Priority Sesh, an implementation of deadlock-free session types in Linear Haskell, which is used for the first time here as a target for session types. The pros and cons of using Linear Haskell are:\todo{add pros and cons here}
+To conclude, in this paper we have presented Priority Sesh, an implementation of deadlock-free session types in Linear Haskell, which is used for the first time here as a target for session types. The pros and cons of using Linear Haskell are:
+\todo{Pro: No complex type-level shenanigans to ensure linearity.}
+\todo{Pro: \emph{Very} idiomatic code. The most, even.}
+\todo{Con: Linear Haskell isn't very mature, \eg, anonymous functions are assumed to be unrestricted, meaning you have to let-bind them and provide a minimal type signature such as |_ %1 -> _|.}
+\todo{Con: There is no integration with @base@, and since @LinearTypes@ is a language extension, tight integration with the core Haskell ecosystem is unlikely to follow.}
+
 We guarantee deadlock freedom in session types by means of \emph{priorities} which are more flexible than previous work on deadlock freedom as they allow cycles of communication and not simply trees.
 
-As future work, we intend to extend the priorities to the recursive par of our implementation. While our raw and tree-structured versions of the library support recursion, that is not the case for the priority-based version which is challenging as it would require type-level reasoning about priorities, which GHC currently cannot fully offer. \todo{add more future work?}
+As future work, we intend to extend the priorities to the recursive par of our implementation. While our raw and tree-structured versions of the library support recursion, that is not the case for the priority-based version which is challenging as it would require type-level reasoning about priorities.
+\todo{Port @priority-sesh@ to Idris2, which supports both linear types and complex type-level reasoning!}
