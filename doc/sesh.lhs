@@ -221,8 +221,7 @@ instance Session s => Session ()
 Units are naturally affine---they contain \emph{zero} information, so dropping them won't harm---and the linear |Monad| class allows you to silently drop unit results of monadic computations.
 They're ideal for \emph{asynchronous} session end!
 
-\todo{%
-  Essentially, using |()| allows us to recover |SendOnce| and |RecvOnce|. Why not build @priority-sesh@ on top of one-shot channels? Well, we are, in some sense, but we believe that, for writing protocols, |RawSend| and |RawRecv| are more intuitive then |SendOnce| and |RecvOnce| communicating channels.}
+Using |()| allows us to recover the semantics of one-shot channels while keeping a session-typed language for idiomatic protocol specification.
 
 \paragraph{Choice}
 So far, we've only presented sending, receiving, and synchronisation. It is, however, possible to send and receive \emph{channels} as well as values, and we leverage that to implement most other session types using only these primitives!
