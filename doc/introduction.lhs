@@ -3,12 +3,6 @@
 %include main.fmt
 
 \section{Introduction}\label{sec:introduction}
-
-\todo{%
-  Briefly discuss Linear Haskell.}
-\todo{%
-  Briefly discuss Exceptional GV~\cite{fowlerlindley19}}
-
 Components in distributed systems must follow a predefined protocol in order to guarantee safety and lack of communication errors. In this context, session types were came to be. They are a type formalism used to specify and verify communication protocols between two or more communicating agents~\cite{honda93,takeuchihonda94,hondavasconcelos98,hondayoshida08}.
 They have been defined for concurrent and functional models, among other paradigms. Most notably, they have been defined for the $\pi$-calculus~\cite{sangiorgiwalker01}---a process calculus for communication and concurrency, and for Good Variation (GV)~\cite{wadler14,lindleymorris15}---a linear concurrent $\lambda$-calculus.
 The $\pi$-calculus has been a natural choice for session types as it is equipped with \emph{channels}, where communication takes place. Later on, channels were borrowed by GV, where the functional paradigm meets communication and concurrency.
@@ -28,18 +22,27 @@ In this work, we focus on linearity and deadlock freedom of session types in Has
 and
 (ii) \emph{guaranteeing deadlock freedom not only for tree-structured communication but also ``good'' cyclic structures thus providing a more flexible and expressive programming experience}.
 
-In order to make session types manageable in Haskell and check priorities, our host language is Linear Haskell \cite{bernardyboespflug18}.
+In order to achieve the above, our chosen host language is Linear Haskell \cite{bernardyboespflug18}, which is the first implementation of linear types and type system in Haskell. This extension of Haskell with linear types is backward compatible---existing programs in Haskell, still typecheck in Linear Haskell and linearity is non-invasive as it allows for data types to store both linear and unrestricted values. This is a very effective handling of linearity, as in most cases both in theory and practice, linearity ``infects' the whole data structures and surrounding contexts.
 
 
-\paragraph{Contributions}
+\paragraph{Contributions} Our contributions are summarised as follows.
+
+\begin{enumerate}
+\item
+We present Priority Sesh, an implementation of deadlock free session types in Linear Haskell which is:
 \begin{itemize}
 \item
-	First implementation of session types to take advantage of Linear Haskell for
-	linearity checking (at least \citet{lindleymorris16} guarantee linearity via
-	\citet{polakow15}).
+	the \emph{first} implementation of session types which take advantage of Linear Haskell for linearity checking; and
 \item
-	First implementation of session types to guarantee deadlock freedom via
-	priorities in Haskell, and perhaps the first embedding of priorities into an
-	existing programming language ever (other implementations use deadlock freedom
-	via tree structure~\cite{lindleymorris16,kokke19}).
+	the \emph{first} implementation of session types which guarantees deadlock freedom via
+	\emph{priorities} in Haskell;
+\item
+	and the \emph{first} embedding of priorities into an existing mainstream programming language.
 \end{itemize}
+
+\item
+We present an updated version of Priority GV \cite{kokkedardha21} typing system...\todo{Fill me in}
+
+\item
+We illustrate Priority Sesh via examples in \autoref{sec:main} and use the cyclic scheduler from \citet{milner99} to illustrate the use of priorities for deadlock freedom.
+\end{enumerate}
