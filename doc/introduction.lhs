@@ -5,8 +5,6 @@
 \section{Introduction}\label{sec:introduction}
 
 \todo{%
-  Introduce \texttt{priority-sesh} using an example.}
-\todo{%
   Briefly discuss Linear Haskell.}
 \todo{%
   Briefly discuss Exceptional GV~\cite{fowlerlindley19}}
