@@ -11,7 +11,7 @@
 \todo{%
   Briefly discuss Exceptional GV~\cite{fowlerlindley19}}
 
-Communication in distributed systems must follow a predefined protocol to guarantee safety and lack of communication errors. In this context, session types were introduced. They are a type formalism to specify and verify communication protocols between two or more communicating agents~\cite{honda93,takeuchihonda94,hondavasconcelos98,hondayoshida08}.
+Communication in distributed systems must follow a predefined protocol to guarantee safety and lack of communication errors. In this context, session types were introduced. They are a type formalism used to specify and verify communication protocols between two or more communicating agents~\cite{honda93,takeuchihonda94,hondavasconcelos98,hondayoshida08}.
 They have been defined in both concurrent and functional computation models. Most notably, they have been defined for the $\pi$-calculus~\cite{sangiorgiwalker01}---a process calculus for communication and concurrency, and for Good Variation (GV)~\cite{wadler14,lindleymorris15}---a linear concurrent $\lambda$-calculus.
 The $\pi$-calculus was a natural choice as it is equipped with \emph{channels}, which were then borrowed by GV, where the functional paradigm meets communication and concurrency.
 Moving up from computational models, session types have been also integrated in mainstream functional programming languages, including Haskell.
