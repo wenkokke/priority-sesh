@@ -2,7 +2,7 @@
 %include linear.fmt
 %include main.fmt
 
-\section{Conclusion, Related and Future work}
+\section{Conclusion, Related and Future work}\label{sec:related}
 \paragraph{Session types in Haskell}
 
 \citet{orchardyoshida17} discuss various approaches to implementing session types in Haskell. Their overview is reproduced below:
