@@ -13,7 +13,7 @@ In this section we introduce Priority Sesh in three steps:
 
 It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel comes from the linear $\pi$-calculus \cite{KPT99} where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of the declared session type.
 
-Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://github.com/tweag/linear-base/}} (\eg, |IO|, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|).
+Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://hackage.haskell.org/package/linear-base}} (\eg, |IO|, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|).
 
 We colour the Haskell definitions which are a part of Sesh:
 \begin{itemize*}[font=\bfseries]
@@ -244,24 +244,24 @@ Differently from |()|, we don't have to implement the |Session| class for |RawSe
 \paragraph{Recursion}
 We can write recursive session types by writing them as recursive Haskell types. Unfortunately, we cannot write recursive type synonyms, so we have to use a newtype. For instance, we can write the type for a recursive summation service, which receives numbers until the client indicates they're done, and then sends back the sum. We specify \emph{two} newtypes:
 \begin{spec}
-newtype SumSrv
-  = MkSumSrv (RawOffer (RawRecv Int SumSrv) (RawSend Int RawEnd))
-newtype SumCnt
-  = MkSumCnt (RawSelect (RawSend Int SumCnt) (RawRecv Int RawEnd))
+newtype RawSumSrv
+  = MkRawSumSrv (RawOffer (RawRecv Int RawSumSrv) (RawSend Int RawEnd))
+newtype RawSumCnt
+  = MkRawSumCnt (RawSelect (RawSend Int RawSumCnt) (RawRecv Int RawEnd))
 \end{spec}
 We implement the summation server as a recursive function:
 \begin{spec}
 sumSrv :: Int %1 -> SumSrv %1 -> IO ()
-sumSrv tot (MkSumSrv s) = offerEither s $ \e -> case x of
+sumSrv tot (MkRawSumSrv s) = offerEither s $ \e -> case x of
   Left   s -> do (x, s) <- recv s; sumSrv (tot + x) s
   Right  s -> do s <- send (tot, s); close s
 \end{spec}
-As |SumSrv| and |SumCnt| are new types, we must provide instances of the |Session| class for them.
+As |RawSumSrv| and |RawSumCnt| are new types, we must provide instances of the |Session| class for them.
 \begin{spec}
-instance Session SumSrv
+instance Session RawSumSrv
   where
-    type Dual SumSrv = SumCnt
-    new = bimap MkSumSrv MkSumCnt <$> new
+    type Dual RawSumSrv = RawSumCnt
+    new = bimap MkRawSumSrv MkRawSumCnt <$> new
 \end{spec}
 
 
@@ -433,34 +433,70 @@ We can then safely define a pure variant of |runSeshIO|:
 Our library implements this encapsulation, though the session token is the first argument, preceding the priority bounds.
 
 \paragraph{Recursion}
-\todo{%
-	We can write priority-polymorphic types and use those to implement recursive sessions, or we can use priority-shifting \`a la~\citet{padovaninovara15}.}
+We could implement recursive session via priority-polymorphic types, or via priority-shifting~\cite{padovaninovara15}. For instance, we could give the \emph{summation service} from \cref{sec:sesh} the following type:
+\begin{spec}
+newtype SumSrv o
+  = MkSumSrv (Offer o  (Recv (o + 1) Int (SumSrv (o + 2)))
+                       (Send (o + 1) Int (End (o + 2))))
+\end{spec}
+We'd then like to assign |sumSrv| the following type:
+\begin{spec}
+sumSrv : Int %1 -> SumSrv o %1 -> Sesh o Top ()
+sumSrv tot (MkSumSrv s) = offerEither s $ \e -> case x of
+  Left   s -> do (x, s) <- recv s; sumSrv (tot + x) s
+  Right  s -> do s <- send (tot, s); weaken (close s)
+\end{spec}
+The upper bound for a recursive call should be |Top|, which ensures that recursive calls are only made in \emph{tail} position~\cite{bernardidardha14,gaythiemann20}. The recursive call naturally has upper bound |Top|. However, the |close| operation happens at some \emph{concrete} priority $\cs{o + n}$, which needs to be raised to |Top|, so we'd have to add a primitive |weaken : Sesh p q a %1 -> Sesh p Top a|.
+
+Unfortunately, writing such priority-polymorphic code relies heavily on GHC's ability to reason about type-level naturals, and GHC rejects |sumSrv| complaining that it cannot verify that |LT o (o + 1)|, |LT (o + 1) (o + 2)|, \etc. There's several possible solutions for this:
+\begin{enumerate}
+\item We could embrace the Hasochism~\cite{lindleymcbride13}, and provide GHC with explicit evidence, though this would make \texttt{priority-sesh} more difficult to use.
+\item We could delegate \emph{some} of these problems to a GHC plugin such as \texttt{type-nat-solver}\footnote{\url{https://github.com/yav/type-nat-solver}} or \texttt{ghc-typelits-presburger}\footnote{\url{https://hackage.haskell.org/package/ghc-typelits-presburger}}. Unfortunately, |`Min`| and |`Max`| are beyond Presburger arithmetic, and \texttt{type-nat-solver} has not been maintained in recent years.
+\item We could attempt to write type families which reduce in as many cases as possible. Unfortunately, a restriction in closed type families~\cite[\S6.1]{eisenbergvytiniotis14} prevents us from checking \emph{exactly these cases}.
+\end{enumerate}
+Currently, the prioritised sessions don't support rercursion, and implementing one of these solutions is future work.
+
 
 \paragraph{Cyclic Scheduler}
-\todo{%
-  We can write a \emph{non-recursive} variant of the cyclic scheduler (cf. all the papers).}
-
+\citet{dardhagay18} and \citet{kokkedardha21} use a \emph{finite} cyclic scheduler as an example. The cyclic scheduler has the following process structure, with the flow of information indicated by the dotted arrows:
+\begin{center}
+\begin{tikzpicture}
+  \node[draw, minimum size=1cm] (sched)  {sched};
+  \node[draw, minimum size=1cm, above=0.5cm of sched] (main)   {main};
+  \node[draw, minimum size=1cm, right=0.5cm of sched] (adder1) {adder};
+  \node[draw, minimum size=1cm, below=0.5cm of sched] (adder2) {adder};
+  \node[draw, minimum size=1cm, left =0.5cm of sched] (adder3) {adder};
+  \path (sched) edge (main);
+  \path (sched) edge (adder1);
+  \path (sched) edge (adder2);
+  \path (sched) edge (adder3);
+  \path[->] (main)   edge[dotted, bend left=45] (adder1);
+  \path[->] (adder1) edge[dotted, bend left=45] (adder2);
+  \path[->] (adder2) edge[dotted, bend left=45] (adder3);
+  \path[->] (adder3) edge[dotted, bend left=45] (main);
+\end{tikzpicture}
+\end{center}
+We start by defining the types of the channels which connect each client process to the scheduler:
 \begin{spec}
 type SR o_1 o_2 a = Send o1 a (Recv o_2 a ())
 type RS o_1 o_2 a = Dual (SR o1 o_2 a)
 \end{spec}
-
+We then define the scheduler itself, which forwards messages from one process to the next in a cycle:
 \begin{spec}
-sched4 :: RS 0 7 a %1 -> SR 1 2 a %1 -> SR 3 4 a %1 -> SR 5 6 a %1 -> Sesh (Val 0) (Val 7) ()
-sched4 s1 s2 s3 s4 = do
+sched :: RS 0 7 a %1 -> SR 1 2 a %1 -> SR 3 4 a %1 -> SR 5 6 a %1 -> Sesh (Val 0) (Val 7) ()
+sched s1 s2 s3 s4 = do
   (x, s1) <- recv s1
   s2 <- send (x, s2); (x, ()) <- recv s2
   s3 <- send (x, s3); (x, ()) <- recv s3
   s4 <- send (x, s4); (x, ()) <- recv s4
   send (x, s1)
 \end{spec}
-
+Finally, we define the |adder| and the |main| processes. The |adder| adds one to the value it receives, and the |main| process initiates the cycle and receives the result:
 \begin{spec}
-add1 :: (LT (Val o_1) (Val o_2)) => RS o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) ()
-add1 s = do (x, s) <- recv s; send (x + 1, s)
-\end{spec}
+adder :: (LT (Val o_1) (Val o_2)) => RS o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) ()
+adder s = do (x, s) <- recv s; send (x + 1, s)
 
-\begin{spec}
 main :: (LT (Val o_1) (Val o_2)) => Int %1 -> SR o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) Int
 main x s = do; s <- send (x, s); (x, ()) <- recv s; return x
 \end{spec}
+While the process structure of the cyclic scheduler \emph{as presented} isn't cyclic, nothing prevents the user from adding communications between the various client processes.

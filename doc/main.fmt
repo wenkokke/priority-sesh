@@ -5,6 +5,7 @@
 %format Delta        = "\Delta"
 %format ~            = "\sim"
 %format <$>          = "\fmap"
+%format Inf          = "\infty"
 %
 %%% One-shot channels
 %
@@ -58,8 +59,11 @@
 %format withNew      = "\tm{\Varid{withNew}}"
 %format connect      = "\tm{\Varid{connect}}"
 %format quiet        = "\tm{\Varid{quiet}}"
-%format MkSumSrv     = SumSrv
-%format MkSumCnt     = SumCnt
+%format weaken       = "\tm{\Varid{weaken}}"
+%format RawSumSrv    = "\seshtySumSrv"
+%format RawSumCnt    = "\seshtySumCnt"
+%format MkRawSumSrv  = SumSrv
+%format MkRawSumCnt  = SumCnt
 %format void_copy    = void "_{" copy "}"
 %
 %%% Priority Sesh
@@ -78,9 +82,9 @@
 %format MkSesh       = "\tm{\Conid{Sesh}}"
 %format runSesh      = "\tm{\Varid{runSesh}}"
 %format runSeshIO    = "\tm{\Varid{runSeshIO}}"
-%format Send o       = "\seshtysend[\cs{" o "}]"
-%format Recv o       = "\seshtyrecv[\cs{" o "}]"
-%format End  o       = "\seshtyend[\cs{" o "}]"
+%format Send (o)     = "\seshtysend[\cs{" o "}]"
+%format Recv (o)     = "\seshtyrecv[\cs{" o "}]"
+%format End  (o)     = "\seshtyend[\cs{" o "}]"
 %format MkSend       = "\tm{\Conid{Send}}"
 %format MkRecv       = "\tm{\Conid{Recv}}"
 %format MkEnd        = "\tm{\Conid{End}}"
@@ -93,11 +97,15 @@
 %format LT  (p) (q)  = "\cs{" p "}" `LT` "\cs{" q "}"
 %format Min (p) (q)  = "\cs{" p "}" `Min` "\cs{" q "}"
 %format Max (p) (q)  = "\cs{" p "}" `Max` "\cs{" q "}"
-%format Select o     = "\seshtysel[\cs{" o "}]"
-%format Offer o      = "\seshtyoff[\cs{" o "}]"
+%format Select (o)   = "\seshtysel[\cs{" o "}]"
+%format Offer (o)    = "\seshtyoff[\cs{" o "}]"
 %format offerEither  = "\tm{\Varid{offerEither}}"
 %format selectLeft   = "\tm{\Varid{selectLeft}}"
 %format selectRight  = "\tm{\Varid{selectRight}}"
+%format SumSrv (o)   = "\seshtySumSrv[" o "]"
+%format SumCnt (o)   = "\seshtySumCnt[" o "]"
+%format MkSumSrv     = SumSrv
+%format MkSumCnt     = SumCnt
 %
 %%% Translation from PGV to Sesh
 %
