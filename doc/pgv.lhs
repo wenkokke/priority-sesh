@@ -51,13 +51,17 @@ We present the typing rules for our variant of PGV in \cref{fig:pgv-typing}. The
     &|Either (ToSesh T) (ToSesh U)|
   \end{array}
 \]
+%
 We translate sequents from PGV to \texttt{priority-sesh} as:
 \[
   \pgv{\tosesh{\seq{p}{q}{\Gamma}{M}{T}}}
   =
   |ToSesh Gamma|\vdash|tosesh M :: Sesh p q (ToSesh T)|
 \]
-We present a full translation from PGV programs to \texttt{priority-sesh} in \cref{fig:pgv-to-sesh-typing}. We translate the communication primitives from PGV to the primitives with the same name in \texttt{priority-sesh}, module the unit arguments in $\pgv{\tm{\new}}$ and $\pgv{\tm{\fork}}$, which are necessary to create thunks in PGV as it's call-by-value:
+%
+%include fig-pgv-to-sesh-typing.lhs
+%
+We present a full translation from PGV programs to \texttt{priority-sesh} in \cref{fig:pgv-to-sesh-typing}. We translate the communication primitives from PGV to those with the same name in \texttt{priority-sesh}, module the unit arguments in $\pgv{\tm{\new}}$ and $\pgv{\tm{\fork}}$, which are necessary to create thunks in PGV as it's call-by-value:
 \[
   \begin{array}{l}
     \pgv{\tosesh{\tmty{\new}{\tylolli{\top}{\bot}{\tyunit}{\typrod{S}{\co{S}}}}}}
@@ -69,5 +73,3 @@ We present a full translation from PGV programs to \texttt{priority-sesh} in \cr
     \quad=|\k -> fork (k ()) :: (() %1 -> Sesh p q ()) %1 -> Sesh Top Bot ()|
   \end{array}
 \]
-
-% include fig-pgv-to-sesh-typing.lhs

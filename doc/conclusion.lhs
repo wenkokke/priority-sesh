@@ -23,7 +23,7 @@
 With respect to linearity, all works above---except \citet{neubauerthiemann04}---guarantee linearity by encoding a linear type context in the Haskell type system, which leads to a trade-off between having easy-to-write session types and having idiomatic programs.
 We side-step this trade-off by relying on Linear Haskell to check linearity. Furthermore, our implementation supports all relevant features, including multiple channels, delegation, recursion, and highly idiomatic code.
 
-With respect to deadlock freedom, none of the works above---except \citet{lindleymorris16}, guarantee deadlock freedom. However, \citet{lindleymorris16} guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:TODO}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows cyclic structures of communication and more expressive programs.
+With respect to deadlock freedom, none of the works above---except \citet{lindleymorris16}, guarantee deadlock freedom. However, \citet{lindleymorris16} guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:introduction}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows cyclic structures of communication and more expressive programs.
 
 
 \paragraph{Session types in other programming languages}
@@ -58,7 +58,7 @@ Other works of guaranteeing deadlock freedom in session-typed systems include th
 
 
 \paragraph{Conclusion and future work}
-In this paper, we present Priority Sesh, an implementation of deadlock-free session types in Linear Haskell, which we use here for the first time as the host language for session types. 
+In this paper, we present Priority Sesh, an implementation of deadlock-free session types in Linear Haskell, which we use here for the first time as the host language for session types.
 By using Linear Haskell, linearity is ensured without complex type-level treatment and session types are easy to write. As a consequence, we provide a very idiomatic code, and in fact \emph{the most} idiomatic code with respect to previous works on session types in Haskell. On the other hand however, there are some drawbacks to using Linear Haskell as opposed to Haskell. The most immediate being the fact that Linear Haskell is not very mature at this stage, \eg, anonymous functions are assumed to be unrestricted, meaning one has toe to let-bind them and provide a minimal type signature such as |_ %1 -> _|. Also, there is no integration with @base@, and since @LinearTypes@ is a language extension, tight integration with the core Haskell ecosystem is challenging.
 In addition to providing simple and elegant linearity checks, in this work we guarantee deadlock freedom of session-typed programs by means of \emph{priorities}, which bring more flexibility than previous work on deadlock freedom as they allow cycles of communication and not just trees.
 As future work, we intend to extend the use of priorities to the recursive part of our implementation. While our raw and tree-structured versions of the library support recursion, that is not yet the case for the priority-based version. This is a challenging task as it would require type-level reasoning about priorities.
