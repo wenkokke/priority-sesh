@@ -271,13 +271,12 @@ The session-typed channels presented in \cref{sec:sesh} can be used to write dea
 woops :: IO Void
 woops = do  (ch_s1, ch_r1) <- new
             (ch_s2, ch_r2) <- new
-            let main  = do  (void, ()) <- recv ch_r2
-                            let (void, void_copy) = dup2 void
-                            send (void, ch_s1)
-                            return void_copy
-            let child = do  (void, ()) <- recv ch_r1
-                            send (void, ch_s2)
-            fork child; main
+            fork $ do  (void, ()) <- recv ch_r1
+                       send (void, ch_s2)
+            (void, ()) <- recv ch_r2
+            let (void, void_copy) = dup2 void
+            send (void, ch_s1)
+            return void_copy
 \end{spec}
 Counter to what the type says, this program doesn't actually produce an inhabitant for |Void|. Instead, it deadlocks! We'd like to help the programming avoid such programs.
 
@@ -499,4 +498,4 @@ adder s = do (x, s) <- recv s; send (x + 1, s)
 main :: (LT (Val o_1) (Val o_2)) => Int %1 -> SR o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) Int
 main x s = do; s <- send (x, s); (x, ()) <- recv s; return x
 \end{spec}
-While the process structure of the cyclic scheduler \emph{as presented} isn't cyclic, nothing prevents the user from adding communications between the various client processes.
+While the process structure of the cyclic scheduler \emph{as presented} isn't cyclic, nothing prevents the user from adding communications between the various client processes, or from removing the scheduler and having the client processes communicate \emph{directly}.
