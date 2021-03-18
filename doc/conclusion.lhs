@@ -25,6 +25,8 @@ We side-step this trade-off by relying on Linear Haskell to check linearity. Fur
 
 With respect to deadlock freedom, none of the works above---except \citet{lindleymorris16}, guarantee deadlock freedom. However, \citet{lindleymorris16} guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:introduction}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows cyclic structures of communication and more expressive programs.
 
+\todo{add the table here?}
+
 
 \paragraph{Session types in other programming languages}
 Session types have been integrated in other programming language paradigms.

@@ -43,5 +43,5 @@ We present Priority Sesh, an implementation of deadlock free session types in Li
 \item and the \emph{first} embedding of priorities into an existing mainstream programming language.
 \end{itemize}
 \item We present a variant of Priority GV~\cite{kokkedardha21} with asynchronous communication and session cancellation following~\citet{fowlerlindley19} and \emph{explicit} lower bounds on the sequent, rather than lower bounds inferred from the typing environment.
-\item We illustrate Priority Sesh via examples in \cref{sec:main}.
+\item We illustrate Priority Sesh via examples in \cref{sec:main}.\todo{re-add the cyclic scheduler and comment about it?}
 \end{enumerate}
