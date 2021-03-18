@@ -393,6 +393,8 @@ The |>>>=| operator sequences two actions with types |Sesh p q| and |Sesh p' q'|
 (>>>=) :: (LT q p') => Sesh p q a %1 -> (a %1-> Sesh p' q' b) %1 -> Sesh (Min p p') (Max q q') b
 mx >>>= mf = MkSesh $ runSeshIO mx >>= \x -> runSeshIO (mf x)
 \end{spec}
+In what follows, we implicitly use |>>>=| with do-notation. This can be accomplished in Haskell using \texttt{RebindableSyntax}.
+
 We define decorated variants of the concurrency and communication primitives:
 \begin{itemize*}[label=\empty]
 \item |send|, |recv|, and |close| each perform a communication action with some priority |o|, and return a computation of type |Sesh o o|, \ie, with \emph{exact} bounds;
