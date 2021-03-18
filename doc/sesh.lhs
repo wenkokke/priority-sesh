@@ -271,12 +271,13 @@ The session-typed channels presented in \cref{sec:sesh} can be used to write dea
 woops :: IO Void
 woops = do  (ch_s1, ch_r1) <- new
             (ch_s2, ch_r2) <- new
-            fork $ do  (void, ()) <- recv ch_r1
-                       send (void, ch_s2)
-            (void, ()) <- recv ch_r2
-            let (void, void_copy) = dup2 void
-            send (void, ch_s1)
-            return void_copy
+            let main  = do  (void, ()) <- recv ch_r2
+                            let (void, void_copy) = dup2 void
+                            send (void, ch_s1)
+                            return void_copy
+            let child = do  (void, ()) <- recv ch_r1
+                            send (void, ch_s2)
+            fork child; main
 \end{spec}
 Counter to what the type says, this program doesn't actually produce an inhabitant for |Void|. Instead, it deadlocks! We'd like to help the programming avoid such programs.
 
