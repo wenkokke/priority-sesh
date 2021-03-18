@@ -327,10 +327,10 @@ As discussed in \cref{sec:introduction}, there is another way to rule out deadlo
   \begin{minipage}{0.5\linewidth}
     \centering
     \begin{tikzpicture}
-      \node[draw, minimum size=1cm]                     (ch_s1) {|send ch_s1|};
-      \node[draw, minimum size=1cm, right=1cm of ch_s1] (ch_r1) {|recv ch_r1|};
-      \node[draw, minimum size=1cm, below=1cm of ch_r1] (ch_s2) {|send ch_s2|};
-      \node[draw, minimum size=1cm, below=1cm of ch_s1] (ch_r2) {|recv ch_r2|};
+      \node[draw, minimum size=1cm]                       (ch_s1) {|send ch_s1|};
+      \node[draw, minimum size=1cm, right=0.5cm of ch_s1] (ch_r1) {|recv ch_r1|};
+      \node[draw, minimum size=1cm, below=0.5cm of ch_r1] (ch_s2) {|send ch_s2|};
+      \node[draw, minimum size=1cm, below=0.5cm of ch_s1] (ch_r2) {|recv ch_r2|};
       \path (ch_s1) edge[double] (ch_r1);
       \path (ch_s2) edge[double] (ch_r2);
       \path[->] (ch_r1) edge[bend left=20] (ch_s2);
@@ -342,10 +342,10 @@ As discussed in \cref{sec:introduction}, there is another way to rule out deadlo
   \begin{minipage}{0.5\linewidth}
     \centering
     \begin{tikzpicture}
-      \node[draw, minimum size=1cm]                     (ch_s1) {|send ch_s1|};
-      \node[draw, minimum size=1cm, right=1cm of ch_s1] (ch_r1) {|recv ch_r1|};
-      \node[draw, minimum size=1cm, below=1cm of ch_r1] (ch_s2) {|send ch_s2|};
-      \node[draw, minimum size=1cm, below=1cm of ch_s1] (ch_r2) {|recv ch_r2|};
+      \node[draw, minimum size=1cm]                       (ch_s1) {|send ch_s1|};
+      \node[draw, minimum size=1cm, right=0.5cm of ch_s1] (ch_r1) {|recv ch_r1|};
+      \node[draw, minimum size=1cm, below=0.5cm of ch_r1] (ch_s2) {|send ch_s2|};
+      \node[draw, minimum size=1cm, below=0.5cm of ch_s1] (ch_r2) {|recv ch_r2|};
       \path (ch_s1) edge[double] (ch_r1);
       \path (ch_s2) edge[double] (ch_r2);
       \path[->] (ch_s1) edge[bend right=20] (ch_r2);
@@ -496,6 +496,6 @@ adder :: (LT (Val o_1) (Val o_2)) => RS o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_
 adder s = do (x, s) <- recv s; send (x + 1, s)
 
 main :: (LT (Val o_1) (Val o_2)) => Int %1 -> SR o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) Int
-main x s = do; s <- send (x, s); (x, ()) <- recv s; return x
+main x s = do; s <- send (x, s); (x, ()) <- recv s; ireturn x
 \end{spec}
 While the process structure of the cyclic scheduler \emph{as presented} isn't cyclic, nothing prevents the user from adding communications between the various client processes, or from removing the scheduler and having the client processes communicate \emph{directly}.
