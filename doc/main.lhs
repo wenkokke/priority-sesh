@@ -31,10 +31,11 @@
 
 
 \begin{abstract}
-	Session types are a type formalism used to specify and verify communication protocols between two or more communicating agents. They have been integrated in several paradigms including the functional one. In particular, session types have been defined for Good Variation (GV)---linear concurrent $\lambda$-calculus, on the formal side, and there are to date many implementations in Haskell, on the practical side.
-  A challenging aspect of session types is when implementing them in mainstream languages, is \emph{linearity}. Works on session types in Haskell enforce linearity by mostly relying on Haskell's type system which then makes session types not easy to write and coding not idiomatic.
+	Session types are used to specify and verify communication protocols between two or more communicating agents and have been integrated in many paradigms, including the functional one.
+  On the theoretical side, session types have been defined most notably for Good Variation (GV)---linear concurrent $\lambda$-calculus. On the practical side, there are to date several implementations of session types in Haskell.
+  A challenging task when implementing session types in mainstream programming languages, is checking \emph{linearity}. Implementations of session types in Haskell check linearity by encoding a linear typing context into Haskell's type system, which leads to a trade-off between having easy-to-write session types and idiomatic programs.
 
-  In this work we implement session types in Linear Haskell, where linearity is enforced without complex type-level treatment and session types are easy to write. Consequently, we provide very idiomatic code. Moreover, we enforce deadlock freedom for the first time for session types in Haskell and do so via \emph{priorities}. These allow for more flexibility in programs as differently from previous work on deadlock freedom in GV, we allow cyclic structures of communications and not only trees.
+  In this work we bypass this trade-off and implement session types in Linear Haskell, where linearity is enforced without complex type-level operations, leading to easy-to-write session types \emph{and} highly idiomatic code. Moreover, we enforce deadlock freedom for session types in Haskell for the first time via \emph{priorities}. These allow for more flexibility in programs as differently from previous work on deadlock freedom in GV, we now allow cyclic structures of communications and not simply trees.
 \end{abstract}
 
 \begin{CCSXML}
