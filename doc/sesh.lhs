@@ -11,7 +11,7 @@ In this section we introduce Priority Sesh in three steps:
 \item in \cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
 \end{itemize}
 
-It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel originates from the linear $\pi$-calculus \cite{KPT99,sangiorgiwalker01}, where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of its session type.
+It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel originates from the linear $\pi$-calculus \cite{KPT99,sangiorgiwalker01}, where each endpoint of a channel must be used for \emph{exactly one} send or receive operation, whereas linearity in the context of session-typed channels, it means that each step in the protocol is performed \emph{exactly once}, but the channel itself is used multiple times.
 
 Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://hackage.haskell.org/package/linear-base}} (\eg, |IO|, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|).
 
@@ -269,7 +269,7 @@ instance Session RawSumSrv
 \end{spec}
 
 
-\subsection{Deadlock freedom via tree (or forest) process structure}\label{sec:tree-sesh}
+\subsection{Deadlock freedom via process structure}\label{sec:tree-sesh}
 The session-typed channels presented in \cref{sec:sesh} can be used to write deadlocking programs:
 \begin{spec}
 woops :: IO Void
@@ -361,7 +361,7 @@ As discussed in \cref{sec:introduction}, there is another way to rule out deadlo
 \end{center}
 If the communication graph is acyclic, then we can assign each node a number such that directed edges only ever point to nodes with \emph{bigger} numbers. For instance, for |totallyFine| we can assign the number |0| to |send ch_s1| and |recv ch_r2|, and |1| to |recv ch_r2| and |send ch_s2|. These numbers are \emph{priorities}.
 
-In this section, we present a type system in which \emph{priorities} are used to ensure deadlock freedom, by tracking the time a process starts and finishes communicating using a graded monad~\cite{gaboardikatsumata16,orchardwadler20}, whose bind operation requires sequentiality.
+In this section, we present a type system in which \emph{priorities} are used to ensure deadlock freedom, by tracking the time a process starts and finishes communicating using a graded monad~\cite{gaboardikatsumata16,orchardwadler20}. The bind operation registers the order of its actions in the type, requiring the sequentiality of their duals.
 
 \paragraph{Priorities}
 The priorities assigned to \emph{communication actions} are always natural numbers, which represent, \emph{abstractly}, at which time the action happens. When tracking the start and finish times of a program, however, we also use |Bot| and |Top| for programs which don't communicate. These are used as the identities for |`Min`| and |`Max`| in lower and upper bounds, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
@@ -461,7 +461,7 @@ Unfortunately, writing such priority-polymorphic code relies heavily on GHC's ab
 \item We could delegate \emph{some} of these problems to a GHC plugin such as \texttt{type-nat-solver}\footnote{\url{https://github.com/yav/type-nat-solver}} or \texttt{ghc-typelits-presburger}\footnote{\url{https://hackage.haskell.org/package/ghc-typelits-presburger}}. Unfortunately, |`Min`| and |`Max`| are beyond Presburger arithmetic, and \texttt{type-nat-solver} has not been maintained in recent years.
 \item We could attempt to write type families which reduce in as many cases as possible. Unfortunately, a restriction in closed type families~\cite[\S6.1]{eisenbergvytiniotis14} prevents us from checking \emph{exactly these cases}.
 \end{enumerate}
-Currently, the prioritised sessions don't support rercursion, and implementing one of these solutions is future work.
+Currently, the prioritised sessions don't support recursion, and implementing one of these solutions is future work.
 
 
 \paragraph{Cyclic Scheduler}

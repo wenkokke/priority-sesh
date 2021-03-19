@@ -159,7 +159,7 @@ There are several works on implementations of MPST in Java:
 \paragraph{Session types, linear logic and deadlock freedom}
 The main line of work regarding deadlock freedom in session-typed systems is that of Curry-Howard correspondences with linear logic \cite{girard87}.
 \citet{CP10} defined a correspondence between session types and dual intuitionistic linear logic and \citet{wadler14} between session types and classical linear logic.
-These works guarantee deadlock freedom \emph{by design} as the communication structures are restricted to trees and due to the \emph{cut} rule, processes share \emph{only} one channel between them in parallel.
+These works guarantee deadlock freedom \emph{by design} as the communication structures are restricted to trees and due to the \emph{cut} rule, processes share \emph{only} one channel between them.
 \citet{dardhagay18} extend \citet{wadler14} with \emph{priorities} following \citet{kobayashi06,padovani14}, thus allowing processes to share more than one channel in parallel, while guaranteeing deadlock freedom.
 \citet{balzertoninho19} introduce \emph{sharing} and guarantee deadlock freedom via priorities.
 All the above works deal with deadlock freedom in a session-typed $\pi$-calculus.
