@@ -10,7 +10,7 @@
 \item
   \citet{neubauerthiemann04} give an encoding of first-order single-channel session-types with recursion;
 \item
-  Using \emph{parameterised monads}, \citet{pucellatov08} provide multiple channels, recursion, and some building blocks for delegation, but require manual manipulation of a session type context;
+  Using \emph{parameterised monads}, \citet{pucellatov08} provide multiple channels, recursion, and some building blocks for delegation, but require manual manipulation of a session typing environment;
 \item
   \citet{sackmaneisenbach08} provide an alternate approach where session types are constructed via a value-level witnesses;
 \item
@@ -20,7 +20,7 @@
 \item
   \citet{lindleymorris16} provide a \emph{finally tagless} embedding of the GV session-typed functional calculus into Haskell, building on a linear \textlambda-calculus embedding due to \citet{polakow15}.
 \end{itemize}
-With respect to linearity, all works above---except \citet{neubauerthiemann04}---guarantee linearity by encoding a linear type context in the Haskell type system, which leads to a trade-off between having easy-to-write session types and having idiomatic programs.
+With respect to linearity, all works above---except \citet{neubauerthiemann04}---guarantee linearity by encoding a linear typing environment in the Haskell type system, which leads to a trade-off between having easy-to-write session types and having idiomatic programs.
 We side-step this trade-off by relying on Linear Haskell to check linearity. Furthermore, our implementation supports all relevant features, including multiple channels, delegation, recursion, and highly idiomatic code.
 
 With respect to deadlock freedom, none of the works above---except \citet{lindleymorris16}, guarantee deadlock freedom. However, \citet{lindleymorris16} guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:introduction}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows cyclic structures of communication and more expressive programs.
