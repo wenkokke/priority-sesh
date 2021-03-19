@@ -3,6 +3,7 @@
 %include main.fmt
 
 \section{Relation to Priority GV}
+\label{sec:pgv}
 The \texttt{priority-sesh} library is based on a variant of Priority GV~\cite{kokkedardha21}, which differs in two ways:
 \begin{enumerate}
 \item it is extended with asynchronous communication and session cancellation following \citet{fowlerlindley19}; and
