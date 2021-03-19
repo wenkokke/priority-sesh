@@ -95,7 +95,7 @@ As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
-We now use the one-shot channels to build a small library of \emph{session-typed channels} based on the \emph{continuation-passing style} encoding of session types in linear types by \citet{dardhagiachino12,DardhaGS17} and in line with other libraries for OCaml \cite{PadFuse} and Scala \cite{ScalasY16,Scalas2017}.
+We use the one-shot channels to build a small library of \emph{session-typed channels} based on the \emph{continuation-passing style} encoding of session types in linear types by \citet{dardhagiachino12,DardhaGS17} and in line with other libraries for Scala \cite{ScalasY16,Scalas2017}, OCaml~\cite{PadFuse}, and Rust~\cite{kokke19}.
 
 \paragraph{An example}
 Let's look at a simple example of a session-typed channel---a multiplication service, which receives two integers, sends back their product, and then terminates:
