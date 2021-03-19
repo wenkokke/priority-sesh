@@ -150,10 +150,10 @@ cancelWorks = TestLabel "cancel" $ TestList
 -- * Deadlock (does not compile, rightfully)
 
 -- deadlockFails :: Test
--- deadlockFails = TestLabel "deadlock" $ TestCase (assert (runSeshIO deadlock))
+-- deadlockFails = TestLabel "deadlock" $ TestCase (assert (runSeshIO woops))
 --   where
---     deadlock :: Sesh t _ _ ()
---     deadlock = do
+--     woops :: Sesh t _ _ ()
+--     woops = do
 --       (s1, r1) <- new :: Sesh t _ _ (Send t _ Void (), Recv t _ Void ())
 --       (s2, r2) <- new :: Sesh t _ _ (Send t _ Void (), Recv t _ Void ())
 --       fork $ do (void, ()) <- recv @0 r1
@@ -167,13 +167,13 @@ cancelWorks = TestLabel "cancel" $ TestList
 type SR t o1 o2 a = Send t o1 a (Recv t o2 a ())
 type RS t o1 o2 a = Dual (SR t o1 o2 a)
 
-schedNode3 ::
+sched4 ::
   RS t 0 7 a %1 ->
   SR t 1 2 a %1 ->
   SR t 3 4 a %1 ->
   SR t 5 6 a %1 ->
   Sesh t ('Val 0) ('Val 7) ()
-schedNode3 s1 s2 s3 s4 = do
+sched4 s1 s2 s3 s4 = do
   (x, s1) <- recv s1
   s2 <- send (x, s2)
   (x, ()) <- recv s2
@@ -183,63 +183,38 @@ schedNode3 s1 s2 s3 s4 = do
   (x, ()) <- recv s4
   send (x, s1)
 
-add1Node ::
+adder ::
   ('Val o1 < 'Val o2) =>
   RS t o1 o2 Int %1 ->
   Sesh t ('Val o1) ('Val o2) ()
-add1Node s = do
+adder s = do
   (x, s) <- recv s
   send (x + 1, s)
 
-mainNode ::
+main ::
   ('Val o1 < 'Val o2) =>
   Int %1 ->
   Int %1 ->
   SR t o1 o2 Int %1 ->
   Sesh t ('Val o1) ('Val o2) Bool
-mainNode x y s = do
+main x y s = do
   s <- send (x, s)
   (x, ()) <- recv s
   return $ x == y
 
 schedWorks :: Test
-schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO main))
+schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO conf))
   where
-    main = do
+    conf = do
       (sr1, rs1) <- new
       (sr2, rs2) <- new
       (sr3, rs3) <- new
       (sr4, rs4) <- new
-      fork $ schedNode3 rs1 sr2 sr3 sr4
-      fork $ add1Node rs2
-      fork $ add1Node rs3
-      fork $ add1Node rs4
-      mainNode 0 3 sr1
-
--- * Pipe (does not compile, wrongfully)
-
--- newtype In t o = In (Recv t o Int (In t (2 + o)))
--- newtype Out t o = Out (Send t o Int (Out t (2 + o)))
---
--- instance Consumable (In t o) where
---   consume (In s) = consume s
---
--- instance Consumable (Out t o) where
---   consume (Out s) = consume s
---
--- instance Session (In t o) where
---   type Dual (In t o) = Out t o
---   new = bimap In Out <$> new
---
--- instance Session (Out t o) where
---   type Dual (Out t o) = In t o
---   new = bimap Out In <$> new
---
--- pipe :: forall o t. In t o %1 -> Out t (1 + o) %1 -> Sesh t ('Val o) 'Top ()
--- pipe (In ch_r) (Out ch_s) = do
---   (x, ch_r) <- recv @o ch_r
---   ch_s <- send @(1 + o) (x, ch_s)
---   pipe @(2 + o) ch_r ch_s
+      fork $ sched rs1 sr2 sr3 sr4
+      fork $ adder rs2
+      fork $ adder rs3
+      fork $ adder rs4
+      main 0 3 sr1
 
 -- -}
 -- -}

@@ -86,7 +86,7 @@ newtype Sesh
 --
 -- NOTE: This operation is /unsafe/ and should not be exported.
 --
-unsafeRunSesh :: Sesh t l u a %1 -> Linear.IO a
+unsafeRunSesh :: Sesh t p q a %1 -> Linear.IO a
 unsafeRunSesh (Sesh x) = x
 
 runSeshIO :: forall p q a. (forall t. Sesh t p q a) -> Linear.IO a
