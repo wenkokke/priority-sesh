@@ -32,13 +32,13 @@ cancelWorks = TestLabel "cancel" $ TestList
   ]
   where
     -- Server cancels, client tries to receive.
-    cancelRecv = do
+    cancelAndRecv = do
       (chan_s, chan_r) <- new
       void $ forkIO (return (consume chan_s))
       recv chan_r
 
     -- Server cancels, client tries to send.
-    cancelSend = do
+    cancelAndSend = do
       (chan_s, chan_r) <- new
       void $ forkIO (return (consume chan_r))
       send chan_s ()
