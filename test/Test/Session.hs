@@ -107,18 +107,18 @@ calcWorks = TestLabel "calc" $ TestList
 -- |Test the interaction of cancel with send and receive.
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() cancelRecv)
-  , TestLabel "send" $ TestCase (assert cancelSend)
+  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() cancelAndRecv)
+  , TestLabel "send" $ TestCase (assert cancelAndSend)
   ]
   where
     -- Server cancels, client tries to receive.
-    cancelRecv = do
+    cancelAndRecv = do
       connect
         (\s -> return (consume s))
         (\s -> do ((), ()) <- recv s; return ())
 
     -- Server cancels, client tries to send.
-    cancelSend = do
+    cancelAndSend = do
       connect
         (\s -> return (consume s))
         (\s -> do () <- send ((), s); return ())
