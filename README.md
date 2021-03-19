@@ -375,5 +375,6 @@ This code fails to compile with the error that `0 ~ 1` doesn't hold, which happe
 
 Finally, the module contains the code for the *finite* cyclic scheduler from §2.4 under "Cyclic Scheduler".
 
+[sesh]: https://github.com/wenkokke/sesh
 [stack]: https://docs.haskellstack.org/en/stable/README/
 [linear-base]: https://github.com/tweag/linear-base/

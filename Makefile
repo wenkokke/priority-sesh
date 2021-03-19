@@ -30,6 +30,9 @@ $(TEXDIR)/%.tex: $(TEXDIR)/%.lhs require-lhs2TeX
 $(TEXDIR)/$(MAIN).pdf: $(TEXSRC) $(LHSSRC:.lhs=.tex) require-latexmk
 	@cd $(TEXDIR) && latexmk -pdf $(MAIN) -halt-on-error
 
+priority-sesh.tar.gz:
+	tar -czvf priority-sesh.tar.gz LICENSE README.md README.pdf src/ test/ priority-sesh.cabal stack.yaml
+
 .PHONY: require-lhs2TeX
 require-lhs2TeX:
 ifeq (,$(wildcard $(shell which lhs2TeX)))
