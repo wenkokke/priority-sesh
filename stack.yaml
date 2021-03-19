@@ -1,8 +1,5 @@
-resolver: lts-17.5
-compiler: ghc-9.1.0
-
-allow-newer: true
-system-ghc: true
+resolver: lts-17.6
+compiler: ghc-9.0.1
 
 packages:
 - '.'

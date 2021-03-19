@@ -2,20 +2,16 @@ cabal-version: 1.12
 
 name:           priority-sesh
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/wenkokke/priority-sesh#readme>
-homepage:       https://github.com/wenkokke/priority-sesh#readme
-bug-reports:    https://github.com/wenkokke/priority-sesh/issues
-author:         Wen Kokke
-maintainer:     wenkokke@users.noreply.github.com
-copyright:      © Wen Kokke
+description:    Please see the README on GitHub at <[redacted]>
+homepage:       [redacted]
+bug-reports:    [redacted]
+author:         [redacted]
+maintainer:     [redacted]
+copyright:      [redacted]
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
   README.md
-
-source-repository head
-  type: git
-  location: https://github.com/wenkokke/priority-sesh
 
 library
   exposed-modules:
