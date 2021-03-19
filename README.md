@@ -2,11 +2,18 @@
 
 Welcome to the artefact associated with *Deadlock-Free Session Types in Linear Haskell*!
 
-## Installation
+## Building and testing
 
-First off, we'll talk you through some installation instructions. Priority Sesh is built with [Stack][stack].
+First off, we'll talk you through some instructions for building and testing Priority Sesh.
 
-TODO
+Priority Sesh requires *at least* GHC 9.0.1, as it uses the `LinearTypes` extension. We build Priority Sesh with [Stack][stack], and building and testing is be as simple as running:
+
+```haskell
+cd /path/to/priority-sesh/
+stack test
+```
+
+Unfortunately, Stack hasn't been thoroughly tested with the latest versions of GHC and Cabal, and running `stack build` sometimes results in `Prelude.chr: bad argument: 3925868637`. (That one's not on us, we think!) Strangely, running `stack test` does not run into this problem, and builds the entire library! We hope that this quirk disappears once Stack implements *official* support for the latest GHC versions. If you do run into this problem, running `stack clean` should solve it.
 
 
 ## Paper to practice
