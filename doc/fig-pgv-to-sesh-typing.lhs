@@ -102,7 +102,7 @@
     |ToSesh Gamma|\vdash|tosesh L :: Sesh p q (ToSesh T, ToSesh T')|
     \sep
     |ToSesh Delta, x :: ToSesh T, y :: ToSesh T'|\vdash|tosesh M :: Sesh p' q' (ToSesh U)|
-  }{|tosesh L >>>= \(x,y) -> M :: (LT q p') => Sesh (Min p p') (Max q q') (ToSesh U)|}
+  }{|tosesh L >>>= \(x,y) -> tosesh M :: (LT q p') => Sesh (Min p p') (Max q q') (ToSesh U)|}
   \\
 
   \inferrule*{

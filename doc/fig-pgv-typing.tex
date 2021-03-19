@@ -8,10 +8,10 @@
   \inferrule*[lab=T-Lam]{
     \seq{p}{q}{\ty{\Gamma},\tmty{x}{T}}{M}{U}
   }{\seq{\top}{\bot}{\ty{\Gamma}}{\lambda x.M}{\tylolli{p}{q}{T}{U}}}
-  
+
   \inferrule*[lab=T-Const]{
   }{\seq{{\top}}{{\bot}}{\emptyenv}{K}{T}}
-  
+
   \inferrule*[lab=T-App]{
     \seq{p}{q}{\ty{\Gamma}}{M}{\tylolli{p''}{q''}{T}{U}}
     \and
@@ -24,10 +24,10 @@
     {{p}\sqcap{p'}\sqcap{p''}}
     {{q}\sqcup{q'}\sqcup{q''}}
     {\ty{\Gamma},\ty{\Delta}}{M\;N}{U}}
-  
+
   \inferrule*[lab=T-Unit]{
   }{\seq{{\top}}{{\bot}}{\emptyenv}{\unit}{\tyunit}}
-  
+
   \inferrule*[lab=T-LetUnit]{
     \seq{p}{q}{\ty{\Gamma}}{M}{\tyunit}
     \and
@@ -35,7 +35,7 @@
     \and
     \cs{q}<\cs{p'}
   }{\seq{{p}\sqcap{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\letunit{M}{N}}{T}}
-  
+
   \inferrule*[lab=T-Pair]{
     \seq{p}{q}{\ty{\Gamma}}{M}{T}
     \and
@@ -43,7 +43,7 @@
     \and
     \cs{q}<\cs{p'}
   }{\seq{{p}\sqcap{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\pair{M}{N}}{\typrod{T}{U}}}
-  
+
   \inferrule*[lab=T-LetPair]{
     \seq{p}{q}{\ty{\Gamma}}{M}{\typrod{T}{T'}}
     \and
@@ -51,15 +51,15 @@
     \and
     \cs{q}<\cs{p'}
   }{\seq{{p}\sqcap{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\letpair{x}{y}{M}{N}}{U}}
-  
+
   \inferrule*[lab=T-Inl]{
     \seq{p}{q}{\ty{\Gamma}}{M}{T}
   }{\seq{p}{q}{\ty{\Gamma}}{\inl{M}}{\tysum{T}{U}}}
-  
+
   \inferrule*[lab=T-Inr]{
     \seq{p}{q}{\ty{\Gamma}}{M}{T}
   }{\seq{p}{q}{\ty{\Gamma}}{\inr{M}}{\tysum{T}{U}}}
-  
+
   \inferrule*[lab=T-CaseSum]{
     \seq{p}{q}{\ty{\Gamma}}{L}{\tysum{T}{T'}}
     \and
@@ -69,7 +69,7 @@
     \and
     \cs{q}<\cs{p'}
   }{\seq{{p}\sqcup{p'}}{{q}\sqcup{q'}}{\ty{\Gamma},\ty{\Delta}}{\casesum{L}{x}{M}{y}{N}}{U}}
-  
+
   \inferrule*[lab=T-Absurd]{
     \seq{p}{q}{\ty{\Gamma}}{M}{\tyvoid}
   }{\seq{p}{q}{\ty{\Gamma}}{\absurd{M}}{T}}
@@ -77,16 +77,16 @@
 \header[${\tmty{K}{T}}$]{Type Schemas for Constants}
 \begin{mathpar}
   \tmty{\new}{\tylolli{\top}{\bot}{\tyunit}{\typrod{S}{\co{S}}}}
-  
-  \tmty{\spawn}{\tylolli{\top}{\bot}{(\tylolli{p}{q}{\tyunit}{\tyunit})}{\tyunit}}
+
+  \tmty{\fork}{\tylolli{\top}{\bot}{(\tylolli{p}{q}{\tyunit}{\tyunit})}{\tyunit}}
 
   \tmty{\cancel}{\tylolli{\top}{\bot}{S}{\tyunit}}
   \\
-  \tmty{\send}{\tylolli{\top}{o}{\typrod{T}{\tysend[{o}]{T}{S}}}{S}}
-  
-  \tmty{\recv}{\tylolli{\top}{o}{\tyrecv[{o}]{T}{S}}{\typrod{T}{S}}}
-  
-  \tmty{\close}{\tylolli{\top}{o}{\tyend[{o}]}{\tyunit}}
+  \tmty{\send}{\tylolli{o}{o}{\typrod{T}{\tysend[{o}]{T}{S}}}{S}}
+
+  \tmty{\recv}{\tylolli{o}{o}{\tyrecv[{o}]{T}{S}}{\typrod{T}{S}}}
+
+  \tmty{\close}{\tylolli{o}{o}{\tyend[{o}]}{\tyunit}}
 \end{mathpar}
 \caption{Typing rules for Priority GV.}
 \label{fig:pgv-typing}

@@ -138,7 +138,7 @@ We side-step this trade-off by relying on Linear Haskell to check linearity. Fur
 
 With respect to deadlock freedom, none of the works above---except \citet{lindleymorris16}---guarantee deadlock freedom. However, \citet{lindleymorris16} guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:introduction}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows programs to have \emph{cyclic} process structures.
 
-\citet{orchardyoshida17} summarise the capabilities of the various implementations of session types in Haskell in a table, which we adapted in \cref{fig:table} by adding columns for the various versions of \texttt{priority-sesh}. In general, you may read \kinda as ``Kinda?'' and \deffo as a resounding ``Yes!'' For instance, \citet{pucellatov08} only provide \emph{partial} delegation, \citet{neubauerthiemann04}, \citet{pucellatov08}, and \citet{lindleymorris16} still need to use combinators instead of standard Haskell application, abstraction, or variables in \emph{some} places, and \citet{neubauerthiemann04} is only deadlock free on the technicality that they don't support multiple channels.
+\citet{orchardyoshida17} summarise the capabilities of the various implementations of session types in Haskell in a table, which we adapted in \cref{fig:table} by adding columns for the various versions of \texttt{priority-sesh}. In general, you may read \kinda as ``Kinda'' and \deffo as a resounding ``Yes!'' For instance, \citet{pucellatov08} only provide \emph{partial} delegation, \citet{neubauerthiemann04}, \citet{pucellatov08}, and \citet{lindleymorris16} still need to use combinators instead of standard Haskell application, abstraction, or variables in \emph{some} places, and \citet{neubauerthiemann04} is only deadlock free on the technicality that they don't support multiple channels.
 
 \paragraph{Session types in other programming languages}
 Session types have been integrated in other programming language paradigms.
@@ -153,8 +153,7 @@ There are several works on implementations of MPST in Java:
 \citet{DHHNY2015} implement MPST in Python and \citet{Fowler16,NY2017} in Erlang, focusing on {purely dynamic} MPST verification via runtime monitoring.
 \citet{NY2017A,NBY2017} extend the work by
 \citet{DHHNY2015} with actors and timed specifications.
-\citet{LMMNSVY2015} adopt a dependently-typed MPST theory
-to verify MPI programs.
+\citet{LMMNSVY2015} adopt a dependently-typed MPST theory to verify MPI programs.
 
 
 \paragraph{Session types, linear logic and deadlock freedom}
