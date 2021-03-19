@@ -13,14 +13,14 @@ The \texttt{priority-sesh} library is based on a variant of Priority GV~\cite{ko
 \item
   it is extended with asynchronous communication and session cancellation following \citet{fowlerlindley19}.
 \end{enumerate}
-These changes preserve subject reduction and progress, and give us \emph{tighter} bounds on priorities. To see why, note that PCP and PGV use the \emph{smallest} priority in the typing environment as an approximation for the lower bound. Unfortunately, this \emph{underestimates} the lower bound in the rules \LabTirName{T-Var} and \LabTirName{T-Lam}. These rules type \emph{values}, which are pure and could have lower bound |Top|, but the smallest priority in their typing environment is not necessarily |Top|.
+These changes preserve subject reduction and progress properties, and give us \emph{tighter} bounds on priorities. To see why, note that PCP \cite{dardhagay18} and PGV \cite{kokkedardha21} use the \emph{smallest} priority in the typing environment as an approximation for the lower bound. Unfortunately, this \emph{underestimates} the lower bound in the rules \LabTirName{T-Var} and \LabTirName{T-Lam} (check \cref{fig:pgv-typing}). These rules type \emph{values}, which are pure and could have lower bound |Top|, but the smallest priority in their typing environment is not necessarily |Top|.
 
 \paragraph{Priority GV}
 We briefly revisit the syntax and type system of PGV, but a full discussion of PGV is out of scope for this paper. For a discussion of the \emph{synchronous} semantics for PGV, and the proofs of subject reduction, progress, and deadlock freedom, please see \citet{kokkedardha21}. For a discussion of the \emph{asynchronous} semantics and session cancellation, please see \citet{fowlerlindley19}.
 
 As in \cref{sec:priority-sesh}, we let $\cs{o}$ range over priorities, which are natural numbers, and $\cs{p}$ and $\cs{q}$ over priority bounds, which are either natural numbers, $\cs{\top}$, or $\cs{\bot}$.
 
-PGV is based on the standard linear $\lambda$-calculus with product types ($\pgv{\ty{\typrod{\cdot}{\cdot}}}$), sum types ($\pgv{\ty{\tysum{\cdot}{\cdot}}}$), and their units ($\pgv{\ty{\tyunit}}$ and $\pgv{\ty{\tyvoid}}$). Linear functions ($\pgv{\ty{\tylolli{p}{q}{\cdot}{\cdot}}}$) are annotated with priority bounds which tell us, if the function is applied, when communication begins and ends.
+PGV is based on the standard linear $\lambda$-calculus with product types ($\pgv{\ty{\typrod{\cdot}{\cdot}}}$), sum types ($\pgv{\ty{\tysum{\cdot}{\cdot}}}$), and their units ($\pgv{\ty{\tyunit}}$ and $\pgv{\ty{\tyvoid}}$). Linear functions ($\pgv{\ty{\tylolli{p}{q}{\cdot}{\cdot}}}$) are annotated with priority bounds which tell us--when the function is applied--when communication begins and ends.
 
 Types and session types are defined as follows:
 \[
@@ -78,7 +78,7 @@ We present the typing rules for PGV in \cref{fig:pgv-typing}. A sequent $\pgv{\s
 \paragraph{Monadic Reflection}
 The graded monad |Sesh p q| arises from the \emph{monadic reflection}~\cite{filinski94} of the typing rules in \cref{fig:pgv-typing}. Monadic reflection is a technique for translating programs in an effectful language to \emph{monadic} programs in a pure language. For instance, \citet{filinski94} demonstrates the reflection from programs of type $\pgv{\ty{T}}$ in a language with exceptions and handlers to programs of type $\pgv{\ty{\tysum{T}{\mathbf{exn}}}}$ in a pure language where $\pgv{\ty{\mathbf{exn}}}$ is the type of exceptions.
 
-We translate programs from PGV to Haskell programs in the |Sesh p q| monad. First, let's look at the translation on types:
+We translate programs from PGV to Haskell programs in the |Sesh p q| monad. First, let's look at the translation of types:
 \[
   \setlength{\arraycolsep}{2pt}
   \begin{array}{lcl}
@@ -118,7 +118,7 @@ We translate programs from PGV to Haskell programs in the |Sesh p q| monad. Firs
   \end{array}
 \]
 %
-Second, let's look at the translation on terms. A term of type $\pgv{\ty{T}}$ with lower bound $\cs{p}$ and upper bound $\cs{q}$ is translated to a Haskell program of type |Sesh p q (ToSesh T)|:
+Now, let's look at the translation of terms. A term of type $\pgv{\ty{T}}$ with lower bound $\cs{p}$ and upper bound $\cs{q}$ is translated to a Haskell program of type |Sesh p q (ToSesh T)|:
 \[
   \setlength{\arraycolsep}{2pt}
   \begin{array}{lcl}
