@@ -68,7 +68,7 @@ syncOnce (MkSyncOnce ch_s ch_r) = do sendOnce ch_s (); recvOnce ch_r
 
 
 \paragraph{Cancellation}
-One-shot channels are created in the linear |IO| monad, so \emph{forgetting} to use a channel results in a complaint from the type-checker. However, it is possible to \emph{explicitly} drop values whose types implement the |Consumable| class, using |consume :: a %1 -> ()|.
+We implement \emph{cancellation} for one-shot channels. One-shot channels are created in the linear |IO| monad, so \emph{forgetting} to use a channel results in a complaint from the type-checker. However, it is possible to \emph{explicitly} drop values whose types implement the |Consumable| class, using |consume :: a %1 -> ()|. The ability to cancel communications is important, as it allows us to safely throw an exception \emph{without violating linearity}, assuming that we cancel all open channels before doing so.
 
 One-shot channels implement |Consumable| by simply dropping their |MVar|s. The Haskell runtime throws an exception when a ``thread is blocked on an |MVar|, but there are no other references to the |MVar| so it can't ever continue.''\footnote{\url{https://downloads.haskell.org/~ghc/9.0.1/docs/html/libraries/base-4.15.0.0/Control-Exception.html\#t:BlockedIndefinitelyOnMVar}} Practically, |consumeAndRecv| throws a |BlockedIndefinitelyOnMVar| exception, whereas |consumeAndSend| does not:
 \begin{center}
@@ -89,7 +89,7 @@ consumeAndSend = do u
 \end{spec}
 \end{minipage}%
 \end{center}
-Where |fork| forks off a new thread using a linear |forkIO|.
+Where |fork| forks off a new thread using a linear |forkIO|. (In GV~\cite{wadler14,lindleymorris16} this operation is called |spawn|.)
 
 As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even happen when a channel is dropped for reasons other than consume, such as a process crashing.
 
@@ -129,7 +129,7 @@ mulClient (s :: MulClient)
 Each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
 
 \paragraph{Channels}
-We start by formalising this notion of duality. Each session type must have a dual, which must itself be a session type. Duality must be an \emph{injective} and \emph{involutive} function. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
+We start by formalising this notion of duality. We start by defining the |Session| type class, which has an \emph{associated type} |Dual|. You may think of |Dual| as a type-level function associated with the |Session| class with \emph{one} case for each instance. We encode the various restrictions on  duality as constraints on the type class. Each session type must have a dual, which must itself be a session type---|Session (Dual s)| means the dual of |s| must also implement |Session|. Duality must be \emph{injective}---the annotation |result -> s| means |result| must uniquely determine |s| and \emph{involutive}---|Dual (Dual s) ~ s| means |Dual (Dual s)| must equal |s|. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
 \begin{spec}
 class (Session (Dual s) , Dual (Dual s) ~ s) => Session s
   where
@@ -151,17 +151,20 @@ We define duality for each session type---|RawSend| is dual to |RawRecv|, |RawRe
 instance Session s => Session (RawSend a s)
   where
     type Dual (RawSend a s) = RawRecv a (Dual s)
-    new = bimap MkRawSend MkRawRecv <$> newOneShot
+    new = do  (ch_s, ch_r) <- newOneShot
+              return (MkRawSend ch_s, MkRawRecv ch_r)
 
 instance Session s => Session (RawRecv a s)
   where
     type Dual (RawRecv a s) = RawSend a (Dual s)
-    new = bimap MkRawRecv MkRawSend . swap <$> newOneShot
+    new = do  (ch_s, ch_r) <- newOneShot
+              return (MkRawRecv ch_r, MkRawSend ch_s)
 
 instance Session RawEnd
   where
     type Dual RawEnd = RawEnd
-    new = bimap MkRawEnd MkRawEnd <$> newSync
+    new = do  (ch_sync1, ch_sync2) <- newSync
+              return (MkRawEnd ch_sync1, MkRawEnd ch_sync2)
 \end{spec}
 The |send| operation constructs a channel for the continuation of the session, then sends one endpoint of that channel, along with the value, over its one-shot channel, and returns the other endpoint:
 \begin{spec}
@@ -183,28 +186,28 @@ close (MkRawEnd ch_sync) = syncOnce ch_sync
 We implement session \emph{cancellation} via the |Consumable| class.  For convenience, we provide the |cancel| function:
 \begin{spec}
 	cancel :: Session s => s %1 -> IO
-	cancel = return . consume
+	cancel s = return (consume s)
 \end{spec}
-As with one-shot channels, we |consume| simply drops the channel, and relies on the |BlockedIndefinitelyOnMVar| check, which means that |cancelAndRecv| throws an exception and |cancelAndSend| does not:
+As with one-shot channels, |consume| simply drops the channel, and relies on the |BlockedIndefinitelyOnMVar| check, which means that |cancelAndRecv| throws an exception and |cancelAndSend| does not:
 \begin{center}
-  \begin{minipage}{0.5\linewidth}
-    \begin{spec}
-      cancelAndRecv = do
-      (ch_s, ch_r) <- new
-      fork $ cancel ch_s
-      ((), ()) <- recv ch_r
-      return ()
-    \end{spec}
-  \end{minipage}%
-  \begin{minipage}{0.5\linewidth}
-    \begin{spec}
-      cancelAndSend = do u
-      (ch_s, ch_r) <- new
-      fork $ cancel ch_r
-      () <- send ch_s ()
-      return ()
-    \end{spec}
-  \end{minipage}%
+\begin{minipage}{0.5\linewidth}
+\begin{spec}
+cancelAndRecv = do
+  (ch_s, ch_r) <- new
+  fork $ cancel ch_s
+  ((), ()) <- recv ch_r
+  return ()
+\end{spec}
+\end{minipage}%
+\begin{minipage}{0.5\linewidth}
+\begin{spec}
+cancelAndSend = do u
+  (ch_s, ch_r) <- new
+  fork $ cancel ch_r
+  () <- send ch_s ()
+  return ()
+\end{spec}
+\end{minipage}%
 \end{center}
 These semantics correspond to EGV~\cite{fowlerlindley19}.
 
@@ -261,7 +264,8 @@ As |RawSumSrv| and |RawSumCnt| are new types, we must provide instances of the |
 instance Session RawSumSrv
   where
     type Dual RawSumSrv = RawSumCnt
-    new = bimap MkRawSumSrv MkRawSumCnt <$> new
+    new = do  (ch_srv, ch_cnt) <- new
+              return (MkRawSumSrv ch_srv, MkRawSumCnt ch_cnt)
 \end{spec}
 
 
@@ -278,7 +282,7 @@ woops = do  (ch_s1, ch_r1) <- new
             send (void, ch_s1)
             return void_copy
 \end{spec}
-Counter to what the type says, this program doesn't actually produce an inhabitant for |Void|. Instead, it deadlocks! We'd like to help the programming avoid such programs.
+Counter to what the type says, this program doesn't actually produce an inhabitant of the \emph{uninhabited} type |Void|. Instead, it deadlocks! We'd like to help the programming avoid such programs.
 
 As discussed in \cref{sec:introduction}, we can \emph{structurally} guarantee deadlock freedom by ensuring that the \emph{process structure} is always a tree or forest. The process structure of a program is an undirected graph, where nodes represent processes, and edges represent the channels connecting them. For instance, the process structure of |woops| is cyclic:
 \begin{center}
@@ -357,7 +361,7 @@ As discussed in \cref{sec:introduction}, there is another way to rule out deadlo
 \end{center}
 If the communication graph is acyclic, then we can assign each node a number such that directed edges only ever point to nodes with \emph{bigger} numbers. For instance, for |totallyFine| we can assign the number |0| to |send ch_s1| and |recv ch_r2|, and |1| to |recv ch_r2| and |send ch_s2|. These numbers are \emph{priorities}.
 
-In this section, we present a type system in which \emph{priorities} are used to ensure deadlock freedom, by tracking the time a process starts and finishes communicating using a graded monad, whose bind operation requires sequentiality.
+In this section, we present a type system in which \emph{priorities} are used to ensure deadlock freedom, by tracking the time a process starts and finishes communicating using a graded monad~\cite{gaboardikatsumata16,orchardwadler20}, whose bind operation requires sequentiality.
 
 \paragraph{Priorities}
 The priorities assigned to \emph{communication actions} are always natural numbers, which represent, \emph{abstractly}, at which time the action happens. When tracking the start and finish times of a program, however, we also use |Bot| and |Top| for programs which don't communicate. These are used as the identities for |`Min`| and |`Max`| in lower and upper bounds, respectively. We let |o| range over natural numbers, |p| over \emph{lower bounds}, and |q| over \emph{upper bounds}.
@@ -420,18 +424,20 @@ offerEither  ::  (LT (Val o) p) => Offer o s_1 s_2 %1 ->
 \end{spec}
 
 \paragraph{Safe IO}
-We can encapsulate the use of IO within the |Sesh p q| monad using parametricity, following the implementation of the |ST| monad~\cite{launchburypeytonjones94}, by indexing |Sesh p q| and each session type constructor with a session token |tok|:
+We can use a trick from the |ST| monad~\cite{launchburypeytonjones94} to define a ``pure'' variant of |runSesh|, which encapsulates all use of IO within the |Sesh p q| monad. The idea is to index the |Sesh p q| and every session type constructor with an extra type parameter |tok|, which we'll call the \emph{session token}:
 \begin{spec}
   send     :: Session s => (a, Send o tok a s) %1 -> Sesh (Val o) (Val o) tok s
   recv     :: Recv o tok a s %1 -> Sesh (Val o) (Val o) tok (a, s)
   close    :: End o tok %1 -> Sesh (Val o) (Val o) tok ()
 \end{spec}
-We can then safely define a pure variant of |runSeshIO|:
+The session token should never be instantiated, except by |runSesh|, and every action under the same call to |runSesh| should use the same type variable |tok| as its session token:
 \begin{spec}
   runSesh :: (forall tok. Sesh p q tok a) %1 -> a
   runSesh x = unsafePerformIO (runSeshIO x)
 \end{spec}
-Our library implements this encapsulation, though the session token is the first argument, preceding the priority bounds.
+This ensures that none of the channels created in the session can escape out of the scope of |runSesh|.
+
+We implement this encapsulation in \texttt{priority-sesh}, though the session token is the first argument, preceding the priority bounds.
 
 \paragraph{Recursion}
 We could implement recursive session via priority-polymorphic types, or via priority-shifting~\cite{padovaninovara15}. For instance, we could give the \emph{summation service} from \cref{sec:sesh} the following type:

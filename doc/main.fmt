@@ -26,13 +26,17 @@
 %format mvar_r1      = mvar "_{r1}"
 %format mvar_s2      = mvar "_{s2}"
 %format mvar_r2      = mvar "_{r2}"
-%format ch_s       = ch "_{s}"
-%format ch_r       = ch "_{r}"
+%format ch_s       = ch "_{" s "}"
+%format ch_r       = ch "_{" r "}"
 %format ch_sync    = ch "_{" sync "}"
-%format ch_s1      = ch "_{s1}"
-%format ch_r1      = ch "_{r1}"
-%format ch_s2      = ch "_{s2}"
-%format ch_r2      = ch "_{r2}"
+%format ch_sync1   = ch "_{" sync1 "}"
+%format ch_sync2   = ch "_{" sync2 "}"
+%format ch_s1      = ch "_{" s1 "}"
+%format ch_r1      = ch "_{" r1 "}"
+%format ch_s2      = ch "_{" s2 "}"
+%format ch_r2      = ch "_{" r2 "}"
+%format ch_srv     = ch "_{" srv "}"
+%format ch_cnt     = ch "_{" cnt "}"
 %
 %%% Sesh
 %
