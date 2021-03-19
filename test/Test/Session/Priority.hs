@@ -128,19 +128,19 @@ calcWorks = TestLabel "calc" $ TestList
 -- |Test the interaction of cancel with send and receive.
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() (runSeshIO cancelRecv))
-  , TestLabel "send" $ TestCase (assert (runSeshIO cancelSend))
+  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() (runSeshIO cancelAndRecv))
+  , TestLabel "send" $ TestCase (assert (runSeshIO cancelAndSend))
   ]
   where
     -- Server cancels, client tries to receive.
-    cancelRecv = do
+    cancelAndRecv = do
       (s, s') <- new
       fork $ return (consume s')
       ((), ()) <- recv @0 s
       return ()
 
     -- Server cancels, client tries to send.
-    cancelSend = do
+    cancelAndSend = do
       (s, s') <- new
       fork $ return (consume s')
       () <- send @0 ((), s)
@@ -210,7 +210,7 @@ schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO conf))
       (sr2, rs2) <- new
       (sr3, rs3) <- new
       (sr4, rs4) <- new
-      fork $ sched rs1 sr2 sr3 sr4
+      fork $ sched4 rs1 sr2 sr3 sr4
       fork $ adder rs2
       fork $ adder rs3
       fork $ adder rs4

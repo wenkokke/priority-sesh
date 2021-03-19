@@ -160,8 +160,8 @@ The `assert` primitive simply checks that no exception is thrown. (If the argume
 ```haskell
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() cancelRecv)
-  , TestLabel "send" $ TestCase (assert cancelSend)
+  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() cancelAndRecv)
+  , TestLabel "send" $ TestCase (assert cancelAndSend)
   ]
   where
     -- Server cancels, client tries to receive.
@@ -375,5 +375,6 @@ This code fails to compile with the error that `0 ~ 1` doesn't hold, which happe
 
 Finally, the module contains the code for the *finite* cyclic scheduler from §2.4 under "Cyclic Scheduler".
 
+[sesh]: https://github.com/wenkokke/sesh
 [stack]: https://docs.haskellstack.org/en/stable/README/
 [linear-base]: https://github.com/tweag/linear-base/

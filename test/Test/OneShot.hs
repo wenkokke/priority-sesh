@@ -27,8 +27,8 @@ pingWorks = TestLabel "ping" $ TestCase (assert ping)
 
 cancelWorks :: Test
 cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() cancelRecv)
-  , TestLabel "send" $ TestCase (assert cancelSend)
+  [ TestLabel "recv" $ TestCase (assertBlockedIndefinitelyOnMVar @() cancelAndRecv)
+  , TestLabel "send" $ TestCase (assert cancelAndSend)
   ]
   where
     -- Server cancels, client tries to receive.
