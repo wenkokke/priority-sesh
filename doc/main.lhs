@@ -30,10 +30,9 @@
 \email{ornela.dardha@@glasgow.ac.uk}
 
 \begin{abstract}
-	Session types model communication protocols between two or more communicating agents. They have been integrated in many programming paradigms, including the functional one. To date, there are several implementations of session types in Haskell.
-  A challenging task when implementing session types is \emph{linearity}. Implementations of session types in Haskell check linearity by encoding a linear typing environment into Haskell's type system, which leads to a trade-off between easy-to-write session types and idiomatic programs. Moreover, these implementations only focus on the most basic properties of session types and often ignore important ones, such as \emph{deadlock freedom}.
+  Priority Sesh is a library for session-typed communication in Linear Haskell which offers strong compile-time correctness guarantees. Priority Sesh offers two deadlock-free APIs for session-typed communication. The first guarantees deadlock freedom by restricting the process structure to trees and forests. It is simple and composeable, but rules out cyclic structures. The second guarantees deadlock freedom via priorities, which allows the programmer to safely use cyclic structures as well!
 
-  In this work, we bypass the aforementioned trade-off and for the first time implement session types in Linear Haskell, where linearity is checked without introducing complex type-level operations. This leads to easy-to-write session types \emph{and} highly idiomatic code. In addition, we enforce deadlock freedom for the first time via \emph{priorities} for session types in Haskell. Priority-based type systems are more expressive and flexible, as they allow programs to have cyclic process structure, not simply tree structures.
+  Our library relies on Linear Haskell to guarantee linearity, which leads to easy-to-write session types and highly idiomatic code, and lets us avoid the complex encodings of linearity in the Haskell type system that made previous libraries difficult to use.
 \end{abstract}
 
 \begin{CCSXML}
