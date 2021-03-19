@@ -89,7 +89,7 @@ consumeAndSend = do u
 \end{spec}
 \end{minipage}%
 \end{center}
-Where |fork| forks off a new thread using a linear |forkIO|. (In GV~\cite{wadler14,lindleymorris16} this operation is called |spawn|.)
+Where |fork| forks off a new thread using a linear |forkIO|. (In GV, this operation is called |spawn|.)
 
 As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even happen when a channel is dropped for reasons other than consume, such as a process crashing.
 
