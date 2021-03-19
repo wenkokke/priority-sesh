@@ -11,7 +11,7 @@ In this section we introduce Priority Sesh in three steps:
 \item in \cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
 \end{itemize}
 
-It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel originates from the linear $\pi$-calculus \cite{KPT99,Sangio01}, where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of its session type.
+It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel originates from the linear $\pi$-calculus \cite{KPT99,sangiorgiwalker01}, where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of its session type.
 
 Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://hackage.haskell.org/package/linear-base}} (\eg, |IO|, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|).
 
@@ -26,7 +26,7 @@ We colour the Haskell definitions which are a part of Sesh:
 
 We start by building a small library of \emph{linear} or \emph{one-shot channels}, \ie, channels that must be use \emph{exactly once} to send or receive a value.
 
-The one-shot channels are at the core of our library, and their efficiency is crucial to the overall efficiency of Priority Sesh. However, we do not aim to present an efficient implementation here. Rather, we aim to present a compact implementation with the correct behaviour.
+The one-shot channels are at the core of our library, and their efficiency is crucial to the overall efficiency of Priority Sesh. However, we do not aim to present an efficient implementation here, rather we aim to present a compact implementation with the correct behaviour.
 
 
 \paragraph{Channels}
@@ -39,7 +39,7 @@ newOneShot :: IO (SendOnce a, RecvOnce a)
 newOneShot = do  (mvar_s, mvar_r) <- dup2 <$> newEmptyMVar
                  return (MkSendOnce (unur mvar_s), MkRecvOnce (unur mvar_r))
 \end{spec}
-The |newEmptyMVar| function returns an \emph{unrestricted} |MVar|, which may be used non-linearly. The |dup2| function creates two (unrestricted) copies of the |MVar|. The |unur| function casts each \emph{unrestricted} copy to a \emph{linear} copy. Thus, we end up with two copies of an |MVar|, each of which must be used \emph{exactly once}.
+The |newEmptyMVar| function returns an \emph{unrestricted} |MVar|, which may be used non-linearly, \ie as many times as one wants. The |dup2| function creates two (unrestricted) copies of the |MVar|. The |unur| function casts each \emph{unrestricted} copy to a \emph{linear} copy. Thus, we end up with two copies of an |MVar|, each of which must be used \emph{exactly once}.
 
 We implement |sendOnce| and |recvOnce| as aliases for the corresponding |MVar| operations.
 \begin{spec}
@@ -95,7 +95,7 @@ As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
-We now use the one-shot channels to build a small library of \emph{session-typed channels}.
+We now use the one-shot channels to build a small library of \emph{session-typed channels} based on the \emph{continuation-passing style} encoding of session types in linear types by \citet{dardhagiachino12,DardhaGS17} and in line with other libraries for OCaml \cite{PadFuse} and Scala \cite{ScalasY16,Scalas2017}.
 
 \paragraph{An example}
 Let's look at a simple example of a session-typed channel---a multiplication service, which receives two integers, sends back their product, and then terminates:
@@ -126,10 +126,10 @@ mulClient (s :: MulClient)
 \end{spec}
 \end{minipage}%
 \end{center}
-Each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
+In order to encode the \emph{sequence} of a session type using one-shot types, each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. This means that the sequence of actions specified by session types becomes a payload of one-shot channels, moving from actions \emph{in breadth} to actions \emph{in depth} (in a \emph{matryoshka doll} style). Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
 
 \paragraph{Channels}
-We start by formalising this notion of duality. We start by defining the |Session| type class, which has an \emph{associated type} |Dual|. You may think of |Dual| as a type-level function associated with the |Session| class with \emph{one} case for each instance. We encode the various restrictions on  duality as constraints on the type class. Each session type must have a dual, which must itself be a session type---|Session (Dual s)| means the dual of |s| must also implement |Session|. Duality must be \emph{injective}---the annotation |result -> s| means |result| must uniquely determine |s| and \emph{involutive}---|Dual (Dual s) ~ s| means |Dual (Dual s)| must equal |s|. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
+We start by defining the |Session| type class, which has an \emph{associated type} |Dual|. You may think of |Dual| as a type-level function associated with the |Session| class with \emph{one} case for each instance. We encode the various restrictions on  duality as constraints on the type class. Each session type must have a dual, which must itself be a session type---|Session (Dual s)| means the dual of |s| must also implement |Session|. Duality must be \emph{injective}---the annotation |result -> s| means |result| must uniquely determine |s| and \emph{involutive}---|Dual (Dual s) ~ s| means |Dual (Dual s)| must equal |s|. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
 \begin{spec}
 class (Session (Dual s) , Dual (Dual s) ~ s) => Session s
   where
@@ -142,7 +142,7 @@ newtype RawSend a s  = MkRawSend (SendOnce (a, Dual s))
 newtype RawRecv a s  = MkRawRecv (RecvOnce (a, s))
 newtype RawEnd       = MkRawEnd SyncOnce
 \end{spec}
-A channel |RawSend| wraps a one-shot channel |SendOnce| over which we send some value---which is the intended value sent by the session channel, and the channel over which \emph{the communicating partner process} continues the session---it'll make more sense once you read the definition for |send|.
+By following \citet {DardhaGS17}, a channel |RawSend| wraps a one-shot channel |SendOnce| over which we send some value---which is the intended value sent by the session channel, and the channel over which \emph{the communicating partner process} continues the session---it'll make more sense once you read the definition for |send|.
 A channel |RawRecv| wraps a one-shot channel |RecvOnce| over which we receive some value and the channel over which \emph{we} continue the session.
 Finally, an channel |RawEnd| wraps a synchronisation.
 
@@ -214,7 +214,7 @@ These semantics correspond to EGV~\cite{fowlerlindley19}.
 \paragraph{Asynchronous close}
 We don't always \emph{want} session-end to involve synchronisation. Unfortunately, the |close| operation is synchronous.
 
-An advantage of defining session types via a type class is that its an \emph{open} class, and we can add new primitives whenever! Let's make the unit type, |()|, a session type:
+An advantage of defining session types via a type class is that its an \emph{open} class, and we can add new primitives whenever. Let's make the unit type, |()|, a session type:
 \begin{spec}
 instance Session s => Session ()
   where
@@ -227,7 +227,7 @@ They're ideal for \emph{asynchronous} session end!
 Using |()| allows us to recover the semantics of one-shot channels while keeping a session-typed language for idiomatic protocol specification.
 
 \paragraph{Choice}
-So far, we've only presented sending, receiving, and synchronisation. It is, however, possible to send and receive \emph{channels} as well as values, and we leverage that to implement most other session types using only these primitives!
+So far, we've only presented sending, receiving, and synchronisation. It is, however, possible to send and receive \emph{channels} as well as values, and we leverage that to implement most other session types by using these primitives only!
 
 For instance, we can implement \emph{binary} choice by sending/receiving |Either| of two session continuations:
 \begin{spec}
@@ -269,7 +269,7 @@ instance Session RawSumSrv
 \end{spec}
 
 
-\subsection{Deadlock freedom via process structure}\label{sec:tree-sesh}
+\subsection{Deadlock freedom via tree (or forest) process structure}\label{sec:tree-sesh}
 The session-typed channels presented in \cref{sec:sesh} can be used to write deadlocking programs:
 \begin{spec}
 woops :: IO Void
@@ -282,7 +282,7 @@ woops = do  (ch_s1, ch_r1) <- new
             send (void, ch_s1)
             return void_copy
 \end{spec}
-Counter to what the type says, this program doesn't actually produce an inhabitant of the \emph{uninhabited} type |Void|. Instead, it deadlocks! We'd like to help the programming avoid such programs.
+Counter to what the type says, this program doesn't actually produce an inhabitant of the \emph{uninhabited} type |Void|. Instead, it deadlocks! We'd like to help the programmer avoid such programs.
 
 As discussed in \cref{sec:introduction}, we can \emph{structurally} guarantee deadlock freedom by ensuring that the \emph{process structure} is always a tree or forest. The process structure of a program is an undirected graph, where nodes represent processes, and edges represent the channels connecting them. For instance, the process structure of |woops| is cyclic:
 \begin{center}
@@ -324,9 +324,9 @@ The strategy for deadlock freedom presented in \cref{sec:tree-sesh} is simple, b
                     (x, ()) <- recv ch_r2
                     return x
 \end{spec}
-This process has \emph{exactly the same} process structure as |woops|, but it's totally fine, and returns |"Hiya!"| you'd expect. We'd like to enable the programmer to write such programs while still being sure their programs don't deadlock.
+This process has \emph{exactly the same} process structure as |woops|, but it's totally fine, and returns |"Hiya!"| as you'd expect. We'd like to enable the programmer to write such programs while still guaranteeing their programs don't deadlock.
 
-As discussed in \cref{sec:introduction}, there is another way to rule out deadlocks---by using \emph{priorities}! Priorities are an approximation of the \emph{communication graph} of a program. The communication graph of a program is a \emph{directed graph} where nodes represent \emph{actions on channels}, and directed edges represent that one action happens before the other. Dual actions are connected with double undirected edges. (You may consider the graph contracted along these edges.) If the communication graph is cyclic, the program deadlocks. The communication graphs for |woops| and |totallyFine| are as follows:
+As discussed in \cref{sec:introduction}, there is another way to rule out deadlocks---by using \emph{priorities}. Priorities are an approximation of the \emph{communication graph} of a program. The communication graph of a program is a \emph{directed graph} where nodes represent \emph{actions on channels}, and directed edges represent that one action happens before the other. Dual actions are connected with double undirected edges. (You may consider the graph contracted along these edges.) If the communication graph is cyclic, the program deadlocks. The communication graphs for |woops| and |totallyFine| are as follows:
 \begin{center}
   \begin{minipage}{0.5\linewidth}
     \centering
@@ -384,7 +384,7 @@ newtype Sesh p q a = MkSesh { runSeshIO :: IO a }
 
 The monad operations for |Sesh p q| merely wrap those for |IO|, hence trivially obeys the monad laws.
 
-The |ireturn| function returns a \emph{pure} computation---the type |Sesh Top Bot| guarantees that all communications happen between |Top| and |Bot|, hence there can be no communication at all!
+The |ireturn| function returns a \emph{pure} computation---the type |Sesh Top Bot| guarantees that all communications happen between |Top| and |Bot|, hence there can be no communication at all.
 
 \begin{spec}
 ireturn :: a %1 -> Sesh Top Bot a
@@ -506,4 +506,4 @@ adder s = do (x, s) <- recv s; send (x + 1, s)
 main :: (LT (Val o_1) (Val o_2)) => Int %1 -> SR o_1 o_2 Int %1 -> Sesh (Val o_1) (Val o_2) Int
 main x s = do; s <- send (x, s); (x, ()) <- recv s; ireturn x
 \end{spec}
-While the process structure of the cyclic scheduler \emph{as presented} isn't cyclic, nothing prevents the user from adding communications between the various client processes, or from removing the scheduler and having the client processes communicate \emph{directly}.
+While the process structure of the cyclic scheduler \emph{as presented} isn't cyclic, nothing prevents the user from adding communications between the various client processes, or from removing the scheduler and having the client processes communicate \emph{directly} in a ring.
