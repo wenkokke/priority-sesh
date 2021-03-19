@@ -11,7 +11,7 @@ In this section we introduce Priority Sesh in three steps:
 \item in \cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
 \end{itemize}
 
-It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel comes from the linear $\pi$-calculus \cite{KPT99} where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of the declared session type.
+It is important to notice that the meaning of linearity in \emph{one-shot channels} differs from linearity in \emph{session channels}. A linear or one-shot channel originates from the linear $\pi$-calculus \cite{KPT99,Sangio01}, where a channel must be used \emph{exactly once in input or output}; whether linearity in session types means that a session channel is used \emph{exactly once by a participant communicating in parallel} but the channel itself is used multiple times is sequence, by following the structure of its session type.
 
 Priority Sesh is written in Linear Haskell~\cite{bernardyboespflug18}. The type |%1 ->| is syntactic sugar for the linear arrow @%1->@. Familiar definitions refer to linear variants packaged with \texttt{linear-base}\footnote{\url{https://hackage.haskell.org/package/linear-base}} (\eg, |IO|, |Functor|, |Bifunctor|, |Monad|) or with Priority Sesh (\eg, |MVar|).
 
