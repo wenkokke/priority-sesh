@@ -1,4 +1,4 @@
-\documentclass[sigplan,screen]{acmart}
+\documentclass[sigplan,screen,anonymous,review]{acmart}
 \bibliographystyle{ACM-Reference-Format}
 \citestyle{acmauthoryear}
 
