@@ -177,7 +177,7 @@ We presented \texttt{priority-sesh}, an implementation of deadlock-free session 
 \item
   Anonymous functions are assumed to be unrestricted rather than linear, meaning anonymous functions must be factored out into a let-binding or where-clause with \emph{at least} a minimal type signature such as |_ %1 -> _|.
 \item
-  There is no integration with \texttt{base} or popular Haskell packages, and given that \texttt{LinearTypes} is an extension, there likely won't be for quite a while. There's \texttt{linear-base}, which provides linear variants of many of the constructs in \texttt{base}. However, \texttt{linear-base} relies heavily on @unsafeCoerce@, which, \emph{ironically}, kills GHC's performance.
+  There is no integration with \texttt{base} or popular Haskell packages, and given that \texttt{LinearTypes} is an extension, there likely won't be for quite a while. There's \texttt{linear-base}, which provides linear variants of many of the constructs in \texttt{base}. However, \texttt{linear-base} relies heavily on @unsafeCoerce@, which, \emph{ironically}, may affect Haskell's performance.
 \item
   Generally, there is little integration with the Haskell ecosystem, \eg, one other contribution we made are the formatting directives for Linear Haskell in lhs2\TeX\footnote{\url{https://hackage.haskell.org/package/lhs2tex}}.
 \end{itemize}
