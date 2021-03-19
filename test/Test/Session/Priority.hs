@@ -210,7 +210,7 @@ schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO conf))
       (sr2, rs2) <- new
       (sr3, rs3) <- new
       (sr4, rs4) <- new
-      fork $ sched rs1 sr2 sr3 sr4
+      fork $ sched4 rs1 sr2 sr3 sr4
       fork $ adder rs2
       fork $ adder rs3
       fork $ adder rs4
