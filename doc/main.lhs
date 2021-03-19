@@ -63,11 +63,10 @@
 %include pgv.lhs
 %include conclusion.lhs
 
-\begin{acks}
-  We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
-\end{acks}
+%\begin{acks}
+%  We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
+%\end{acks}
 
-\clearpage
 \bibliography{main}
 
 \end{document}
