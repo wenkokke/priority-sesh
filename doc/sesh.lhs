@@ -265,7 +265,7 @@ instance Session RawSumSrv
 \end{spec}
 
 
-\subsection{Deadlock freedom via structure}\label{sec:tree-sesh}
+\subsection{Deadlock freedom via process structure}\label{sec:tree-sesh}
 The session-typed channels presented in \cref{sec:sesh} can be used to write deadlocking programs:
 \begin{spec}
 woops :: IO Void

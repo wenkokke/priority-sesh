@@ -2,7 +2,7 @@
 %include linear.fmt
 %include main.fmt
 
-\section{Conclusion, Related and Future work}\label{sec:related}
+\section{Related work}\label{sec:related}
 \paragraph{Session types in Haskell}
 
 \citet{orchardyoshida17} discuss various approaches to implementing session types in Haskell. Their overview is reproduced below:
@@ -59,9 +59,18 @@ Other works of guaranteeing deadlock freedom in session-typed systems include th
 \citet{kokke19} guarantees deadlock freedom of session types in Rust by enforcing a tree structure of communication actions.
 
 
-\paragraph{Conclusion and future work}
-In this paper, we present Priority Sesh, an implementation of deadlock-free session types in Linear Haskell, which we use here for the first time as the host language for session types.
-By using Linear Haskell, linearity is ensured without complex type-level treatment and session types are easy to write. As a consequence, we provide a very idiomatic code, and in fact \emph{the most} idiomatic code with respect to previous works on session types in Haskell. On the other hand however, there are some drawbacks to using Linear Haskell as opposed to Haskell. The most immediate being the fact that Linear Haskell is not very mature at this stage, \eg, anonymous functions are assumed to be unrestricted, meaning one has toe to let-bind them and provide a minimal type signature such as |_ %1 -> _|. Also, there is no integration with @base@, and since @LinearTypes@ is a language extension, tight integration with the core Haskell ecosystem is challenging.
-In addition to providing simple and elegant linearity checks, in this work we guarantee deadlock freedom of session-typed programs by means of \emph{priorities}, which bring more flexibility than previous work on deadlock freedom as they allow cycles of communication and not just trees.
-As future work, we intend to extend the use of priorities to the recursive part of our implementation. While our raw and tree-structured versions of the library support recursion, that is not yet the case for the priority-based version. This is a challenging task as it would require type-level reasoning about priorities.
-We also plan to investigate @priority-sesh@ in Idris2, which supports both linear types and complex type-level reasoning,
+\section{Discussion and future work}
+We presented \texttt{priority-sesh}, an implementation of deadlock-free session types in Linear Haskell. Using Linear Haskell allows us to ensure linearity---or more accurate, have linearity guaranteed for us---without relying on complex type-level machinery. Consequently, we hit the sweet spot of easy-to-write session types and idiomatic code---in fact, probably \emph{the most} idiomatic code when compared with previous work, though the previous work predates Linear Haskell. Unfortunately, there are some drawbacks to using Linear Haskell. Most importantly, Linear Haskell is not very mature at this stage. For instance:
+\begin{itemize}
+\item
+  Anonymous functions are assumed to be unrestricted rather than linear, meaning anonymous functions must be factored out into a let-binding or where-clause with \emph{at least} a minimal type signature such as |_ %1 -> _|.
+\item
+  There is no integration with \texttt{base} or popular Haskell packages, and given that \texttt{LinearTypes} is an extension, there likely won't be for quite a while. There's \texttt{linear-base}, which provides linear variants of many of the constructs in \texttt{base}. However, \texttt{linear-base} relies heavily on @unsafeCoerce@, which, \emph{ironically}, kills GHC's performance.
+\item
+  Generally, there is little integration with the Haskell ecosystem, \eg, one other contribution we made are the formatting directives for Linear Haskell in lhs2\TeX\footnote{\url{https://hackage.haskell.org/package/lhs2tex}}.
+\end{itemize}
+However, we believe that many of these drawbacks will disappear as the Linear Haskell ecosystem matures.
+
+Our work also provides a library which guarantees deadlock freedom via \emph{priorities}, which allows for more flexible typing that previous work on deadlock freedom via \emph{process structure}.
+
+In the future, we plan to address the issue of priority-polymorphic code and recursion session types in our implementation. (While the versions of our library in~\cref{sec:sesh,sec:tree-sesh} support recursion, that is not yet the case for the priority-based version in~\cref{sec:priority-sesh}.) This is a challenging task, as it requires complex reasoning about type-level naturals. We outlined various approaches in \cref{sec:priority-sesh}. However, an alternative would be to implement \texttt{priority-sesh} in Idris2~\cite{brady13,brady17}, which supports \emph{both} linear types \emph{and} complex type-level reasoning.
