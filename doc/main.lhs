@@ -29,9 +29,8 @@
   \country{Scotland}}
 \email{ornela.dardha@@glasgow.ac.uk}
 
-
 \begin{abstract}
-	Session types model communication protocols between two or more communicating agents. They have been integrated in many programming paradigms, including the functional one. To date, there are several implementations of session types in Haskell. 
+	Session types model communication protocols between two or more communicating agents. They have been integrated in many programming paradigms, including the functional one. To date, there are several implementations of session types in Haskell.
   A challenging task when implementing session types is \emph{linearity}. Implementations of session types in Haskell check linearity either dynamically, by throwing run-time errors, or statically, by encoding a linear typing environment into Haskell's type system, which leads to a trade-off between easy-to-write session types and idiomatic programs. Moreover, these implementations only focus on the most basic properties of session types and often ignore important ones, such as \emph{deadlock freedom}.
 
   In this work, we bypass the aforementioned trade-off and for the first time implement session types in Linear Haskell, where linearity is checked without introducing complex type-level operations. This leads to easy-to-write session types \emph{and} highly idiomatic code. In addition, we enforce deadlock freedom for the first time via \emph{priorities} for session types in Haskell. Priority-based type systems are more expressive and flexible, as they allow programs to have cyclic process structure, not simply tree structures.
@@ -63,6 +62,10 @@
 %include sesh.lhs
 %include pgv.lhs
 %include conclusion.lhs
+
+\begin{acks}
+  We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
+\end{acks}
 
 \clearpage
 \bibliography{main}

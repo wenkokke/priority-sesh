@@ -25,7 +25,7 @@ We side-step this trade-off by relying on Linear Haskell to check linearity. Fur
 
 With respect to deadlock freedom, none of the works above---except \citet{lindleymorris16}, guarantee deadlock freedom. However, \citet{lindleymorris16} guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:introduction}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows cyclic structures of communication and more expressive programs.
 
-\citet{orchardyoshida17} summarise the capabilities of the various implementations of session types in Haskell in a table, which we adapted in \cref{fig:table}, adding columns for the various versions of \texttt{priority-sesh}. In general, you may read \checkmark as ``Kinda?'' and \doublecheckmark as a resounding ``Yes!'' For instance, \citet{pucellatov08} only provide \emph{partial} delegation, \citet{neubauerthiemann04}, \citet{pucellatov08}, and \citet{lindleymorris16} still need to use combinators instead of standard Haskell application, abstraction, or variables in \emph{some} places, and \citet{neubauerthiemann04} is only deadlock free on the technicality that they don't support multiple channels.
+\citet{orchardyoshida17} summarise the capabilities of the various implementations of session types in Haskell in a table, which we adapted in \cref{fig:table}, adding columns for the various versions of \texttt{priority-sesh}. In general, you may read \kinda as ``Kinda?'' and \deffo as a resounding ``Yes!'' For instance, \citet{pucellatov08} only provide \emph{partial} delegation, \citet{neubauerthiemann04}, \citet{pucellatov08}, and \citet{lindleymorris16} still need to use combinators instead of standard Haskell application, abstraction, or variables in \emph{some} places, and \citet{neubauerthiemann04} is only deadlock free on the technicality that they don't support multiple channels.
 
 \begin{figure*}
   \centering
@@ -50,80 +50,80 @@ With respect to deadlock freedom, none of the works above---except \citet{lindle
     & \cref{sec:priority-sesh}
     \\ \hline
     Recursion
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
     &
-    & \doublecheckmark
-    & \doublecheckmark
+    & \deffo
+    & \deffo
     &
     \\
     Delegation
     &
-    & \checkmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
+    & \kinda
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
     \\
     Multiple channels
     &
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
     \\
     Idiomatic code
-    & \checkmark
-    & \checkmark
+    & \kinda
+    & \kinda
     &
-    & \doublecheckmark
-    & \doublecheckmark
-    & \checkmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
+    & \deffo
+    & \deffo
+    & \kinda
+    & \deffo
+    & \deffo
+    & \deffo
     \\
     Easy-to-write session types
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
+    & \deffo
+    & \deffo
+    & \deffo
     &
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
-    & \doublecheckmark
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
+    & \deffo
     \\
     Deadlock freedom
-    & \checkmark
+    & \kinda
     &
     &
     &
     &
-    & \checkmark
+    & \kinda
     &
-    & \checkmark
-    & \doublecheckmark
+    & \kinda
+    & \deffo
     \\
     \emph{via process structure}
-    & \checkmark
+    & \kinda
     &
     &
     &
     &
-    & \doublecheckmark
+    & \deffo
     &
-    & \doublecheckmark
+    & \deffo
     &
     \\
     \emph{via priorities}
@@ -135,7 +135,7 @@ With respect to deadlock freedom, none of the works above---except \citet{lindle
     &
     &
     &
-    & \doublecheckmark
+    & \deffo
   \end{tabular}
   \caption{Capabilities of various implementations of session types in Haskell~\cite[adapted from][]{orchardyoshida17}.}
   \label{fig:table}
