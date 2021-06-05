@@ -216,6 +216,19 @@ schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO conf))
       fork $ adder rs4
       main 0 3 sr1
 
+
+-- * Counterexample for soundness :(
+
+woops :: Sesh t ('Val 0) ('Val 0) ()
+woops = do
+  (s1, r1) <- new
+  (s2, r2) <- new
+  fork $ do
+    (v, ()) <- recv r1
+    fork $ send (v, s2)
+  (v, ()) <- recv r2
+  fork $ send (v, s1)
+
 -- -}
 -- -}
 -- -}
