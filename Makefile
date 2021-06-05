@@ -30,8 +30,45 @@ $(TEXDIR)/%.tex: $(TEXDIR)/%.lhs require-lhs2TeX
 $(TEXDIR)/$(MAIN).pdf: $(TEXSRC) $(LHSSRC:.lhs=.tex) require-latexmk
 	@cd $(TEXDIR) && latexmk -pdf $(MAIN) -halt-on-error
 
+
+################################################################################
+# Generate conference artifact
+################################################################################
+
+.PHONY: artifact
+artifact: priority-sesh.tar.gz
+
 priority-sesh.tar.gz:
-	tar -czvf priority-sesh.tar.gz LICENSE README.md README.pdf src/ test/ priority-sesh.cabal stack.yaml
+	tar -czvf priority-sesh.tar.gz	\
+		LICENSE												\
+		README.md											\
+		README.pdf										\
+		src/													\
+		test/													\
+		priority-sesh.cabal						\
+		stack.yaml
+
+
+################################################################################
+# Generate ArXiv package
+################################################################################
+
+.PHONY: arxiv
+arxiv: doc/priority-sesh.zip
+
+doc/priority-sesh.zip: clean build
+	cd doc && zip arxiv.zip			\
+		00README.XXX							\
+	  ACM-Reference-Format.bst	\
+		*.tex											\
+		preamble/*.tex						\
+		*.bib											\
+		*.bbl
+
+
+################################################################################
+# Dependencies with readable error messages
+################################################################################
 
 .PHONY: require-lhs2TeX
 require-lhs2TeX:

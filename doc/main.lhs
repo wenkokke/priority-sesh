@@ -1,5 +1,4 @@
 \documentclass[sigplan,screen]{acmart}
-\bibliographystyle{ACM-Reference-Format}
 \citestyle{acmauthoryear}
 
 \let\Bbbk\undefined % acmart conflicts with lhs2TeX
@@ -12,6 +11,7 @@
 \input{preamble/sesh}
 
 \begin{document}
+\sloppy
 
 \title{Deadlock-Free Session Types in Linear Haskell}
 
@@ -62,10 +62,11 @@
 %include pgv.lhs
 %include conclusion.lhs
 
-%\begin{acks}
-%  We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
-%\end{acks}
+\begin{acks}
+  We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
+\end{acks}
 
+\bibliographystyle{ACM-Reference-Format}
 \bibliography{main}
 
 \end{document}
