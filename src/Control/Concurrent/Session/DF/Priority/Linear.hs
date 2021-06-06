@@ -188,14 +188,14 @@ instance Session () where
 -- * Communication primitives
 
 -- |Fork off the first argument as a new  thread.
-fork :: Sesh t p q () %1 -> Sesh t 'Top 'Bot ()
+fork :: Sesh t p q () %1 -> Sesh t p 'Bot ()
 fork = Sesh . void . forkIO . unsafeRunSesh
 
 -- |Combines 'new' and 'fork' in a single operation.
-connect :: (Session s, 'Bot < p') =>
+connect :: (Session s, 'Bot < Min p p', 'Bot < p, 'Bot < p') =>
            (s %1 -> Sesh t p q ()) %1 ->
            (Dual s %1 -> Sesh t p' q' a) %1 ->
-           Sesh t p' q' a
+           Sesh t (Min p p') q' a
 connect k1 k2 = new >>>= \(s1, s2) -> fork (k1 s1) >>> k2 s2
 
 -- |Send a value over a channel.
