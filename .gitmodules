@@ -1,12 +1,9 @@
 [submodule "vendor/liquidhaskell"]
 	path = vendor/liquidhaskell
 	url = https://github.com/ucsd-progsys/liquidhaskell.git
-[submodule "vendor/liquid-fixpoint"]
-	path = vendor/liquid-fixpoint
-	url = https://github.com/ucsd-progsys/liquid-fixpoint.git
-[submodule "vendor/liquid-ghc-prim"]
-	path = vendor/liquid-ghc-prim
-	url = https://github.com/liquidhaskell/liquid-ghc-prim.git
 [submodule "vendor/liquid-base"]
 	path = vendor/liquid-base
-	url = https://github.com/liquidhaskell/liquid-base.git
+	url = https://github.com/liquidhaskell/liquid-base
+[submodule "vendor/liquid-ghc-prim"]
+	path = vendor/liquid-ghc-prim
+	url = https://github.com/liquidhaskell/liquid-ghc-prim

@@ -1,0 +1,7 @@
+with-compiler:     ghc-9.0.1
+
+packages:          ./priority-sesh.cabal
+
+optional-packages: ./vendor/liquidhaskell/liquidhaskell.cabal
+                   ./vendor/liquid-fixpoint/liquid-fixpoint.cabal
+                   ./vendor/liquid-ghc-prim/liquid-ghc-prim.cabal
