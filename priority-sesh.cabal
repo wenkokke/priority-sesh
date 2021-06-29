@@ -25,11 +25,9 @@ flag liquid
 common common-base
   if !flag(liquid)
     build-depends:    base          ==0.4.15.0.0
-                    , linear-base   ==0.1.0,
   else
     build-depends:    liquid-base   ==0.4.15.0.0
                     , liquidhaskell ==0.8.10.2.1
-                    , linear-base   ==0.1.0,
     ghc-options:      -fplugin=LiquidHaskell
 
 library
@@ -43,6 +41,7 @@ library
                       Data.Type.Nat
                       Data.Type.Priority
   hs-source-dirs:     src
+  build-depends:      linear-base   ==0.1.0
   default-language:   Haskell2010
   default-extensions: LinearTypes
 
@@ -56,8 +55,9 @@ test-suite test-priority-sesh
                       Test.Session
                       Test.Session.Priority
   hs-source-dirs:     test
-  build-depends:      HUnit         >=1.6 && <1.7,
-                      silently      >=1.2 && <2.0,
-                      priority-sesh
+  build-depends:      HUnit         >=1.6 && <1.7
+                    , linear-base   ==0.1.0
+                    , silently      >=1.2 && <2.0
+                    , priority-sesh
   default-language:   Haskell2010
   default-extensions: LinearTypes
