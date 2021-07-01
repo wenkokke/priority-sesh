@@ -134,7 +134,7 @@
   \citet{lindleymorris16} provide a \emph{finally tagless} embedding of the GV session-typed functional calculus into Haskell, building on a linear \textlambda-calculus embedding due to \citet{polakow15}.
 \end{itemize}
 With respect to linearity, all works above---except \citet{neubauerthiemann04}---guarantee linearity by encoding a linear typing environment in the Haskell type system, which leads to a trade-off between having easy-to-write session types and having idiomatic programs.
-We side-step this trade-off by relying on Linear Haskell to check linearity. Furthermore, our implementation supports all relevant features, including multiple channels, full delegation, recursion, and highly idiomatic code.
+We side-step this trade-off by relying on Linear Haskell to check linearity. Furthermore, our implementation supports all relevant features, including multiple channels, full delegation, recursion, and more idiomatic code.
 
 With respect to deadlock freedom, none of the works above---except \citet{lindleymorris16}---guarantee deadlock freedom. However, \citet{lindleymorris16} guarantee deadlock freedom \emph{structurally}, by implementing GV. As discussed in~\cref{sec:introduction}, structure-based deadlock freedom is more restrictive than priority-based deadlock freedom, as it restricts communication graphs to \emph{trees}, whereas the priority-based approach allows programs to have \emph{cyclic} process structures.
 

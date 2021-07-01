@@ -27,7 +27,7 @@ Our \texttt{priority-sesh} library answers both questions \emph{mostly} positive
 In~\cref{sec:main}, we present Priority Sesh, an implementation of deadlock free session types in Linear Haskell which is:
 \begin{itemize}
 \item
-  the \emph{first} implementation of session types to take advantage of Linear Haskell for linearity checking, and producing easy-to-write session types and highly idiomatic code;
+  the \emph{first} implementation of session types to take advantage of Linear Haskell for linearity checking, and producing easy-to-write session types and more idiomatic code;
 \item
   the \emph{first} implementation of session types in Haskell to guarantee deadlock freedom of programs with cyclic process structure via \emph{priorities}; and
 \item
