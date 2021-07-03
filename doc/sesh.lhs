@@ -185,7 +185,7 @@ close (MkRawEnd ch_sync) = syncOnce ch_sync
 \paragraph{Cancellation}
 We implement session \emph{cancellation} via the |Consumable| class.  For convenience, we provide the |cancel| function:
 \begin{spec}
-	cancel :: Session s => s %1 -> IO
+	cancel :: Session s => s %1 -> IO ()
 	cancel s = return (consume s)
 \end{spec}
 As with one-shot channels, |consume| simply drops the channel, and relies on the |BlockedIndefinitelyOnMVar| check, which means that |cancelAndRecv| throws an exception and |cancelAndSend| does not:
