@@ -126,7 +126,7 @@ mulClient (s :: MulClient)
 \end{spec}
 \end{minipage}%
 \end{center}
-In order to encode the \emph{sequence} of a session type using one-shot types, each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. This means that the sequence of actions specified by session types becomes a payload of one-shot channels, moving from actions \emph{in breadth} to actions \emph{in depth} (in a \emph{matryoshka doll} style). Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
+In order to encode the \emph{sequence} of a session type using one-shot types, each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
 
 \paragraph{Channels}
 We start by defining the |Session| type class, which has an \emph{associated type} |Dual|. You may think of |Dual| as a type-level function associated with the |Session| class with \emph{one} case for each instance. We encode the various restrictions on  duality as constraints on the type class. Each session type must have a dual, which must itself be a session type---|Session (Dual s)| means the dual of |s| must also implement |Session|. Duality must be \emph{injective}---the annotation |result -> s| means |result| must uniquely determine |s| and \emph{involutive}---|Dual (Dual s) ~ s| means |Dual (Dual s)| must equal |s|. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
@@ -270,7 +270,7 @@ instance Session RawSumSrv
 
 
 \subsection{Deadlock freedom via process structure}\label{sec:tree-sesh}
-The session-typed channels presented in \cref{sec:sesh} can be used to write deadlocking programs:
+The session-typed channels presented in \cref{sec:sesh} can be used to write deadlocking programs, \eg, by receiving before sending:
 \begin{spec}
 woops :: IO Void
 woops = do  (ch_s1, ch_r1) <- new
@@ -402,11 +402,12 @@ In what follows, we implicitly use |>>>=| with do-notation. This can be accompli
 We define decorated variants of the concurrency and communication primitives:
 \begin{itemize*}[label=\empty]
 \item |send|, |recv|, and |close| each perform a communication action with some priority |o|, and return a computation of type |Sesh o o|, \ie, with \emph{exact} bounds;
-\item |new|, |fork|, and |cancel| don't perform any communication action, and so return a \emph{pure} computation of type |Sesh Top Bot|.
+\item |new| and |cancel| don't perform any communication action, and so return a \emph{pure} computation of type |Sesh Top Bot|;
+  \item |fork| takes a computation which performs communication actions as an argument, forks it off into a separate thread, and masks the upper bound in its return type.
 \end{itemize*}
 \begin{spec}
 new      :: Session s => Sesh Top Bot (s, Dual s)
-fork     :: Sesh p q () %1 -> Sesh Top Bot ()
+fork     :: Sesh p q () %1 -> Sesh p Bot ()
 cancel   :: Session s => s %1 -> Sesh Top Bot ()
 send     :: Session s => (a, Send o a s) %1 -> Sesh (Val o) (Val o) s
 recv     :: Recv o a s %1 -> Sesh (Val o) (Val o) (a, s)
