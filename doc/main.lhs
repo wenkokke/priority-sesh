@@ -30,13 +30,19 @@
 \email{ornela.dardha@@glasgow.ac.uk}
 
 
-\copyrightyear{2021}
-\acmYear{2021}
-\setcopyright{acmlicensed}\acmConference[Haskell '21]{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium}{August 26--27, 2021}{Virtual, Republic of Korea}
-\acmBooktitle{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium (Haskell '21), August 26--27, 2021, Virtual, Republic of Korea}
+%%% The following is specific to Haskell '21 and the paper
+%%% 'Deadlock-Free Session Types in Linear Haskell'
+%%% by Wen Kokke and Ornela Dardha.
+%%%
+\setcopyright{acmlicensed}
 \acmPrice{15.00}
 \acmDOI{10.1145/3471874.3472979}
+\acmYear{2021}
+\copyrightyear{2021}
+\acmSubmissionID{icfpws21haskellmain-p25-p}
 \acmISBN{978-1-4503-8615-9/21/08}
+\acmConference[Haskell '21]{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium}{August 26--27, 2021}{Virtual Event, Republic of Korea}
+\acmBooktitle{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium (Haskell '21), August 26--27, 2021, Virtual Event, Republic of Korea}
 
 \begin{abstract}
   \emph{Priority Sesh} is a library for session-typed communication in Linear Haskell which offers strong compile-time correctness guarantees. Priority Sesh offers two deadlock-free APIs for session-typed communication. The first guarantees deadlock freedom by restricting the process structure to trees and forests. It is simple and composeable, but rules out cyclic structures. The second guarantees deadlock freedom via priorities, which allows the programmer to safely use cyclic structures as well.
@@ -75,6 +81,7 @@
   We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
 \end{acks}
 
+\balance
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{main}
 

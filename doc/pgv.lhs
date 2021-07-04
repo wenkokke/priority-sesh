@@ -172,37 +172,41 @@ Now, let's look at the translation of terms. A term of type $\pgv{\ty{T}}$ with 
   \end{array}
 \]
 We translate the communication primitives from PGV to those with the same name in \texttt{priority-sesh}, with some minor changes in the translations of $\pgv{\tm{\new}}$ and $\pgv{\tm{\fork}}$, where PGV needs some unit arguments to create thunks in PGV, as it's call-by-value, which aren't needed in Haskell:
-\[
+\begin{flushleft}
+\(
   \begin{array}{l}
     \pgv{\tosesh{\tmty{\new}{\tylolli{\top}{\bot}{\tyunit}{\typrod{S}{\co{S}}}}}}
     \\
-    \quad=|\() -> new :: () %1 -> (ToSesh S, ToSesh (Dual S))|
+    \;=|\() -> new :: () %1 -> (ToSesh S, ToSesh (Dual S))|
     \\
     \pgv{\tosesh{\tmty{\fork}{\tylolli{\top}{\bot}{(\tylolli{p}{q}{\tyunit}{\tyunit})}{\tyunit}}}}
     \\
-    \quad=|\k -> fork (k ()) :: (() %1 -> Sesh p q ()) %1 -> Sesh Top Bot ()|
+    \;=|\k -> fork (k ()) :: (() %1 -> Sesh p q ()) %1 -> Sesh Top Bot ()|
   \end{array}
-\]
+\)
+\end{flushleft}
 The rest of PGV's communication primitives line up exactly with those of \texttt{priority-sesh}:
-\[
+\begin{flushleft}
+\(
   \begin{array}{l}
     \pgv{\tosesh{\tmty{\send}{\tylolli{o}{o}{\typrod{T}{\tysend[{o}]{T}{S}}}{S}}}}
     \\
-    \quad=|send :: Session (ToSesh S) => (ToSesh T, Send o (ToSesh T) (ToSesh S)) %1 -> Sesh (Val o) (Val o) (ToSesh S)|
+    \;=|send :: Session (ToSesh S) => (ToSesh T, Send o (ToSesh T) (ToSesh S)) %1 -> Sesh (Val o) (Val o) (ToSesh S)|
     \\
     \pgv{\tosesh{\tmty{\recv}{\tylolli{o}{o}{\tyrecv[{o}]{T}{S}}{\typrod{T}{S}}}}}
     \\
-    \quad=|recv :: Recv o (ToSesh T) (ToSesh S) %1 -> Sesh (Val o) (Val o) (ToSesh T, ToSesh S)|
+    \;=|recv :: Recv o (ToSesh T) (ToSesh S) %1 -> Sesh (Val o) (Val o) (ToSesh T, ToSesh S)|
     \\
     \pgv{\tosesh{\tmty{\close}{\tylolli{o}{o}{\tyend[{o}]}{\tyunit}}}}
     \\
-    \quad=|close :: End o %1 -> Sesh (Val o) (Val o) ()|
+    \;=|close :: End o %1 -> Sesh (Val o) (Val o) ()|
     \\
     \pgv{\tosesh{\tmty{\cancel}{\tylolli{\top}{\bot}{S}{\tyunit}}}}
     \\
-    \quad=|cancel :: Session (ToSesh S) => ToSesh S %1 -> Sesh Top Bot ()|
+    \;=|cancel :: Session (ToSesh S) => ToSesh S %1 -> Sesh Top Bot ()|
   \end{array}
-\]
+\)
+\end{flushleft}
 These two translations, on types and terms, comprise a \emph{monadic reflection} from PGV into \texttt{priority-sesh}, which preserves typing. We state this theorem formally, using $\Gamma\vdash|x :: a|$ to mean that the Haskell program |x| has type |a| in typing environment |Gamma|:
 \begin{theorem}
   If $\pgv{\seq{p}{q}{\Gamma}{M}{T}}$, then $|ToSesh Gamma|\vdash|tosesh M :: Sesh p q (ToSesh T)|$.
