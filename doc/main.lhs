@@ -45,7 +45,7 @@
 \acmBooktitle{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium (Haskell '21), August 26--27, 2021, Virtual Event, Republic of Korea}
 
 \begin{abstract}
-  \emph{Priority Sesh} is a library for session-typed communication in Linear Haskell which offers strong compile-time correctness guarantees. Priority Sesh offers two deadlock-free APIs for session-typed communication. The first guarantees deadlock freedom by restricting the process structure to trees and forests. It is simple and composeable, but rules out cyclic structures. The second guarantees deadlock freedom via priorities, which allows the programmer to safely use cyclic structures as well.
+  {Priority Sesh} is a library for session-typed communication in Linear Haskell which offers strong compile-time correctness guarantees. Priority Sesh offers two deadlock-free APIs for session-typed communication. The first guarantees deadlock freedom by restricting the process structure to trees and forests. It is simple and composable, but rules out cyclic structures. The second guarantees deadlock freedom via priorities, which allows the programmer to safely use cyclic structures as well.
 
   Our library relies on Linear Haskell to guarantee linearity, which leads to easy-to-write session types and more idiomatic code, and lets us avoid the complex encodings of linearity in the Haskell type system that made previous libraries difficult to use.
 \end{abstract}
@@ -79,6 +79,7 @@
 
 \begin{acks}
   We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
+  This work is supported by the EU HORIZON 2020 MSCA RISE project 778233 “Behavioural Application Program Interfaces” (BehAPI)
 \end{acks}
 
 \balance

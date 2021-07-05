@@ -164,6 +164,7 @@ These works guarantee deadlock freedom \emph{by design} as the communication str
 \citet{balzertoninho19} introduce \emph{sharing} and guarantee deadlock freedom via priorities.
 All the above works deal with deadlock freedom in a session-typed $\pi$-calculus.
 With regards to function languages, the original works on GV \cite{gayvasconcelos10,gayvasconcelos12} did not guarantee deadlock freedom. This was later addressed by \citet{lindleymorris15,wadler15} via syntactic restrictions where communication once again follows a tree structure. \citet{kokkedardha21} introduce PGV--Priority GV, by following \citet{dardhagay18} and allowing for more flexible programming in GV.
+\citet{FKDLM21} present Hypersequent GV (HGV), a core calculus for functional programming with session types that enjoys deadlock freedom, confluence, and strong normalisation.
 
 Other works on deadlock freedom in session-typed systems include the works by \citet{dezani-ciancaglinimostrous06}, where deadlock freedom is guaranteed by allowing only one active session at a time and by \citet{dezani-ciancagliniliguoro09progress}, where priorities are used for correct interleaving of channels.
 \citet{hondayoshida08} guarantee deadlock freedom \emph{within a single} session of MPST, but not for session interleaving.
@@ -176,12 +177,12 @@ We presented \texttt{priority-sesh}, an implementation of deadlock-free session 
 \item
   Anonymous functions are assumed to be unrestricted rather than linear, meaning anonymous functions must be factored out into a let-binding or where-clause with \emph{at least} a minimal type signature such as |_ %1 -> _|.
 \item
-  There is no integration with \texttt{base} or popular Haskell packages, and given that \texttt{LinearTypes} is an extension, there likely won't be for quite a while. There's \texttt{linear-base}, which provides linear variants of many of the constructs in \texttt{base}. However, \texttt{linear-base} relies heavily on @unsafeCoerce@, which, \emph{ironically}, may affect Haskell's performance.
+  There is no integration with \texttt{base} or popular Haskell packages, and given that \texttt{LinearTypes} is an extension, there likely won't be for quite a while. There's \texttt{linear-base}, which provides linear variants of many of the constructs in \texttt{base}. However, \texttt{linear-base} relies heavily on @unsafeCoerce@, which, {ironically}, may affect Haskell's performance.
 \item
   Generally, there is little integration with the Haskell ecosystem, \eg, one other contribution we made are the formatting directives for Linear Haskell in lhs2\TeX\footnote{\url{https://hackage.haskell.org/package/lhs2tex}}.
 \end{itemize}
 However, we believe that many of these drawbacks will disappear as the Linear Haskell ecosystem matures.
 
-Our work also provides a library which guarantees deadlock freedom via \emph{priorities}, which allows for more flexible typing than previous work on deadlock freedom via a \emph{tree process structure}.
+Our work also provides a library which guarantees deadlock freedom via \emph{priorities}, which allows for more flexible typing than previous work on deadlock freedom via a {tree process structure}.
 
-In the future, we plan to address the issue of priority-polymorphic code and recursion session types in our implementation. (While the versions of our library in~\cref{sec:sesh,sec:tree-sesh} support recursion, that is not yet the case for the priority-based version in~\cref{sec:priority-sesh}.) This is a challenging task, as it requires complex reasoning about type-level naturals. We outlined various approaches in \cref{sec:priority-sesh}. However, an alternative we would like to investigate, would be to implement \texttt{priority-sesh} in Idris2~\cite{brady13,brady17}, which supports \emph{both} linear types \emph{and} complex type-level reasoning.
+In the future, we plan to address the issue of priority-polymorphic code and recursion session types in our implementation. (While the versions of our library in~\cref{sec:sesh,sec:tree-sesh} support recursion, that is not yet the case for the priority-based version in~\cref{sec:priority-sesh}.) This is a challenging task, as it requires complex reasoning about type-level naturals. We outlined various approaches in \cref{sec:priority-sesh}. However, an alternative we would like to investigate, would be to implement {priority-sesh} in Idris2~\cite{brady13,brady17}, which supports {both} linear types {and} complex type-level reasoning.

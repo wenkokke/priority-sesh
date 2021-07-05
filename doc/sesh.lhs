@@ -7,7 +7,7 @@
 In this section we introduce Priority Sesh in three steps:
 \begin{itemize}
 \item in \cref{sec:one-shot}, we build a small library of \emph{linear} or \emph{one-shot channels} based on MVars~\cite{peytonjonesgordon96};
-\item in \cref{sec:sesh}, we use these one-shot channels to build a small library of \emph{session-typed channels} \cite{dardhagiachino12}; and
+\item in \cref{sec:sesh}, we use these one-shot channels to build a small library of \emph{session-typed channels} \cite{DardhaGS17}; and
 \item in \cref{sec:priority-sesh}, we decorate these session types with \emph{priorities} to guarantee deadlock-freedom \cite{kokkedardha21}.
 \end{itemize}
 
@@ -95,7 +95,7 @@ As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even
 
 
 \subsection{Session-typed channels}\label{sec:sesh}
-We use the one-shot channels to build a small library of \emph{session-typed channels} based on the \emph{continuation-passing style} encoding of session types in linear types by \citet{dardhagiachino12,DardhaGS17} and in line with other libraries for Scala \cite{ScalasY16,Scalas2017}, OCaml~\cite{PadFuse}, and Rust~\cite{kokke19}.
+We use the one-shot channels to build a small library of \emph{session-typed channels} based on the \emph{continuation-passing style} encoding of session types in linear types by \citet{Dardha16,DardhaGS17} and in line with other libraries for Scala \cite{ScalasY16,Scalas2017}, OCaml~\cite{PadFuse}, and Rust~\cite{kokke19}.
 
 \paragraph{An example}
 Let's look at a simple example of a session-typed channel---a multiplication service, which receives two integers, sends back their product, and then terminates:
@@ -126,10 +126,10 @@ mulClient (s :: MulClient)
 \end{spec}
 \end{minipage}%
 \end{center}
-In order to encode the \emph{sequence} of a session type using one-shot types, each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. \emph{Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
+In order to encode the \emph{sequence} of a session type using one-shot types, each action on a session-typed channel returns a channel for the \emph{continuation} of the session---save for |close|, which ends the session. Furthermore, |mulServer| and |mulClient| act on endpoints with \emph{dual} types. {Duality} is crucial to session types as it ensures that when one process sends, the other is ready to receive, and vice versa. This is the basis for communication safety guaranteed by a session type system.
 
 \paragraph{Channels}
-We start by defining the |Session| type class, which has an \emph{associated type} |Dual|. You may think of |Dual| as a type-level function associated with the |Session| class with \emph{one} case for each instance. We encode the various restrictions on  duality as constraints on the type class. Each session type must have a dual, which must itself be a session type---|Session (Dual s)| means the dual of |s| must also implement |Session|. Duality must be \emph{injective}---the annotation |result -> s| means |result| must uniquely determine |s| and \emph{involutive}---|Dual (Dual s) ~ s| means |Dual (Dual s)| must equal |s|. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
+We start by defining the |Session| type class, which has an {associated type} |Dual|. You may think of |Dual| as a type-level function associated with the |Session| class with \emph{one} case for each instance. We encode the various restrictions on  duality as constraints on the type class. Each session type must have a dual, which must itself be a session type---|Session (Dual s)| means the dual of |s| must also implement |Session|. Duality must be \emph{injective}---the annotation |result -> s| means |result| must uniquely determine |s| and \emph{involutive}---|Dual (Dual s) ~ s| means |Dual (Dual s)| must equal |s|. These constraints are all captured by the |Session| class, along with |new| for constructing channels:
 \begin{spec}
 class (Session (Dual s) , Dual (Dual s) ~ s) => Session s
   where
@@ -466,7 +466,7 @@ Currently, the prioritised sessions don't support recursion, and implementing on
 
 
 \paragraph{Cyclic Scheduler}
-\citet{dardhagay18} and \citet{kokkedardha21} use a \emph{finite} cyclic scheduler as an example. The cyclic scheduler has the following process structure, with the flow of information indicated by the dotted arrows:
+\citet{dardhagay18} and \citet{kokkedardha21extended} use a \emph{finite} cyclic scheduler as an example. The cyclic scheduler has the following process structure, with the flow of information indicated by the dotted arrows:
 \begin{center}
 \begin{tikzpicture}
   \node[draw, minimum size=1cm] (sched)  {sched};
