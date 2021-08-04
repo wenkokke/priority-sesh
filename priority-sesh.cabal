@@ -1,5 +1,4 @@
-cabal-version: 1.12
-
+cabal-version:  2.4
 name:           priority-sesh
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/wenkokke/priority-sesh#readme>
@@ -14,44 +13,38 @@ extra-source-files:
   README.md
 
 source-repository head
-  type: git
-  location: https://github.com/wenkokke/priority-sesh
+  type:             git
+  location:         https://github.com/wenkokke/priority-sesh
+
+common common-depends
+  build-depends:      base        >=4.7 && <5
+                    , linear-base >=0.1 && <0.2
+  default-language:   Haskell2010
+  default-extensions: LinearTypes
+                    , ImportQualifiedPost
 
 library
-  exposed-modules:
-    Control.Concurrent.Linear
-    Control.Concurrent.MVar.Linear
-    Control.Concurrent.OneShot.Linear
-    Control.Concurrent.Session.Linear
-    Control.Concurrent.Session.DF.Tree.Linear
-    Control.Concurrent.Session.DF.Priority.Linear
-    Data.Type.Nat
-    Data.Type.Priority
-  hs-source-dirs:
-    src
-  build-depends:
-    base                 >=4.7 && <5,
-    linear-base          >=0.1 && <0.2
-  default-language:
-    Haskell2010
+  import:             common-depends
+  exposed-modules:    Control.Concurrent.Linear
+                      Control.Concurrent.OneShot.Linear
+                      Control.Concurrent.Session.Linear
+                      Control.Concurrent.Session.DF.Tree.Linear
+                      Control.Concurrent.Session.DF.Priority.Linear
+                      Data.Type.Nat
+                      Data.Type.Priority
+  other-modules:      Control.Concurrent.MVar.Linear
+                      System.Mem.Weak.Linear
+  hs-source-dirs:     src
 
 test-suite test-priority-sesh
-  type:
-    exitcode-stdio-1.0
-  main-is:
-    Test.hs
-  other-modules:
-    Test.HUnit.Linear
-    Test.OneShot
-    Test.Session
-    Test.Session.Priority
-  hs-source-dirs:
-    test
-  build-depends:
-    base                    >=4.7 && <5,
-    HUnit                   >=1.6 && <1.7,
-    linear-base             >=0.1 && <0.2,
-    silently                >=1.2 && <2.0,
-    priority-sesh
-  default-language:
-    Haskell2010
+  import:             common-depends
+  type:               exitcode-stdio-1.0
+  main-is:            Test.hs
+  other-modules:      Test.HUnit.Linear
+                      Test.OneShot
+                      Test.Session
+                      Test.Session.Priority
+  hs-source-dirs:     test
+  build-depends:      HUnit    >=1.6 && <1.7
+                    , silently >=1.2 && <2.0
+                    , priority-sesh
