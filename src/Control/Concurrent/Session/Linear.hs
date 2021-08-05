@@ -19,10 +19,11 @@ module Control.Concurrent.Session.Linear
   , End
   , Session (..)
   -- Communication primitives
+  , connect
   , send
   , recv
   , close
-  , connect
+  , cancel
   -- Binary choice
   , Select
   , Offer
@@ -32,7 +33,6 @@ module Control.Concurrent.Session.Linear
   ) where
 
 import Prelude.Linear hiding (Dual)
-import Control.Cancellable.Linear
 import Control.Concurrent.Linear
 import Control.Concurrent.OneShot.Linear qualified as OneShot
 import Control.Exception
@@ -54,22 +54,22 @@ newtype End      = End OneShot.SyncOnce
 
 -- * Duality and session initiation
 
-class ( Cancellable s
+class ( Consumable s
       , Session (Dual s)
       , Dual (Dual s) ~ s
       ) => Session s where
   type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
 
-deriving instance (Cancellable a, Session s) => Cancellable (Send a s)
-deriving instance (Cancellable a, Session s) => Cancellable (Recv a s)
-deriving instance Cancellable End
+deriving instance (Consumable a, Session s) => Consumable (Send a s)
+deriving instance (Consumable a, Session s) => Consumable (Recv a s)
+deriving instance Consumable End
 
-instance (Cancellable a, Session s) => Session (Send a s) where
+instance (Consumable a, Session s) => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
   new = bimap Send Recv <$> OneShot.new
 
-instance (Cancellable a, Session s) => Session (Recv a s) where
+instance (Consumable a, Session s) => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
   new = bimap Recv Send . swap <$> OneShot.new
 
@@ -84,7 +84,10 @@ instance Session () where
 
 -- * Communication primitives
 
-send :: (Cancellable a, Session s) => (a, Send a s) %1 -> Linear.IO s
+connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
+connect k1 k2 = do (s1, s2) <- new; void $ forkIO (k1 s1); k2 s2
+
+send :: (Consumable a, Session s) => (a, Send a s) %1 -> Linear.IO s
 send (x, Send ch_s) = do
   (here, there) <- new
   OneShot.send ch_s (x, there)
@@ -96,8 +99,9 @@ recv (Recv ch_r) = OneShot.recv ch_r
 close :: End %1 -> Linear.IO ()
 close (End sync) = OneShot.sync sync
 
-connect :: Session s => (s %1 -> Linear.IO ()) %1 -> (Dual s %1 -> Linear.IO a) %1 -> Linear.IO a
-connect k1 k2 = do (s1, s2) <- new; void $ forkIO (k1 s1); k2 s2
+cancel :: Consumable a => a %1 -> Linear.IO ()
+cancel x = return (consume x)
+
 
 
 -- * Binary choice

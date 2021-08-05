@@ -54,8 +54,6 @@ module Control.Concurrent.Session.DF.Priority.Linear
   ) where
 
 import Prelude.Linear hiding (Max, Min, Dual)
-import Control.Cancellable.Linear (Cancellable)
-import Control.Cancellable.Linear qualified as Cancellable
 import Control.Concurrent.Linear
 import Control.Concurrent.OneShot.Linear qualified as OneShot
 import Control.Functor.Linear as Control
@@ -77,9 +75,9 @@ newtype Send t (o :: Nat) a s = Send (OneShot.SendOnce (a, Dual s))
 newtype Recv t (o :: Nat) a s = Recv (OneShot.RecvOnce (a, s))
 newtype End  t (o :: Nat)     = End OneShot.SyncOnce
 
-deriving instance (Cancellable a, Session s) => Cancellable (Send t o a s)
-deriving instance (Cancellable a, Session s) => Cancellable (Recv t o a s)
-deriving instance Cancellable (End t o)
+deriving instance (Consumable a, Session s) => Consumable (Send t o a s)
+deriving instance (Consumable a, Session s) => Consumable (Recv t o a s)
+deriving instance Consumable (End t o)
 
 
 -- * The |Sesh| communication monad
@@ -157,7 +155,7 @@ instance Control.Functor (Sesh t p q) where
 
 -- * Duality and session initiation
 
-class ( Cancellable s     -- ^ Sessions are .
+class ( Consumable s     -- ^ Sessions are .
       , Session (Dual s)  -- ^ The dual of a session is also a session.
       , Dual (Dual s) ~ s -- ^ Duality is involutive.
       ) => Session s where
@@ -165,11 +163,11 @@ class ( Cancellable s     -- ^ Sessions are .
   type Dual s = result | result -> s
   new :: Sesh t 'Top 'Bot (s, Dual s)
 
-instance (Cancellable a, Session s) => Session (Send t o a s) where
+instance (Consumable a, Session s) => Session (Send t o a s) where
   type Dual (Send t o a s) = Recv t o a (Dual s)
   new = Sesh $ bimap Send Recv <$> OneShot.new
 
-instance (Cancellable a, Session s) => Session (Recv t o a s) where
+instance (Consumable a, Session s) => Session (Recv t o a s) where
   type Dual (Recv t o a s) = Send t o a (Dual s)
   new = Sesh $ bimap Recv Send . swap <$> OneShot.new
 
@@ -196,7 +194,7 @@ connect :: (Session s, 'Bot < Min p p', 'Bot < p, 'Bot < p') =>
 connect k1 k2 = new >>>= \(s1, s2) -> fork (k1 s1) >>> k2 s2
 
 -- |Send a value over a channel.
-send :: forall o s a t. (Cancellable a, Session s) => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
+send :: forall o s a t. (Consumable a, Session s) => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
 send (x, Send ch_s) = Sesh $ do
   (here, there) <- unsafeRunSesh new
   OneShot.send ch_s (x, there)
@@ -210,9 +208,9 @@ recv (Recv ch_r) = Sesh $ OneShot.recv ch_r
 close :: forall o t. End t o %1 -> Sesh t ('Val o) ('Val o) ()
 close (End sync) = Sesh $ OneShot.sync sync
 
-
-cancel :: Cancellable a => a %1 -> Sesh t 'Top 'Bot ()
-cancel x = Sesh $ Cancellable.cancel x
+-- |Cancel a session.
+cancel :: Consumable a => a %1 -> Sesh t 'Top 'Bot ()
+cancel x = Sesh $ return (consume x)
 
 
 -- * Binary choice

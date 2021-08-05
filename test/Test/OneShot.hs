@@ -6,7 +6,6 @@
 
 module Test.OneShot where
 
-import Control.Cancellable.Linear (Cancellable(..))
 import Control.Concurrent.Linear
 import Control.Concurrent.OneShot.Linear
 import Control.Functor.Linear
@@ -35,11 +34,11 @@ cancelWorks = TestLabel "cancel" $ TestList
     -- Server cancels, client tries to receive.
     cancelAndRecv = do
       (chan_s, chan_r) <- new
-      void $ forkIO (cancel chan_s)
+      void $ forkIO (return $ consume chan_s)
       recv chan_r
 
     -- Server cancels, client tries to send.
     cancelAndSend = do
       (chan_s, chan_r) <- new
-      void $ forkIO (cancel chan_r)
+      void $ forkIO (return $ consume chan_r)
       send chan_s ()

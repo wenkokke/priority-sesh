@@ -2,13 +2,13 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Control.Concurrent.OneShot.Linear where
 
 import Prelude qualified as Unrestricted
 import Prelude.Linear
 import Control.Functor.Linear qualified as Linear
-import Control.Cancellable.Linear ( Cancellable(..) )
 import Control.Concurrent.Linear ()
 import Control.Concurrent.MVar (MVar)
 import Control.Concurrent.MVar qualified as Unrestricted
@@ -19,6 +19,7 @@ import System.Mem.Weak.Linear qualified as Linear
 import System.IO.Linear qualified as Linear
 import Unsafe.Linear qualified as Unsafe
 import Control.Exception (Exception)
+import GHC.Stack.CCS (whoCreated)
 
 
 data CommunicationException
@@ -33,16 +34,22 @@ instance Exception CommunicationException
 newtype SendOnce a = SendOnce (Weak (MVar a))
 newtype RecvOnce a = RecvOnce (Weak (MVar a))
 
-instance Cancellable a => Cancellable (SendOnce a) where
-  cancel (SendOnce weak) = Linear.finalize weak
+instance Consumable (SendOnce a) where
+  -- This is safe because 'SendOnce' and 'RecvOnce' are only ever
+  -- created via 'new', which adds a finaliser which invokes consume
+  -- on any potential value contained in the MVar.
+  consume x = Unsafe.toLinear2 const () x
 
-instance Cancellable a => Cancellable (RecvOnce a) where
-  cancel (RecvOnce weak) = Linear.finalize weak
+instance Consumable (RecvOnce a) where
+  -- This is safe because 'SendOnce' and 'RecvOnce' are only ever
+  -- created via 'new', which adds a finaliser which invokes consume
+  -- on any potential value contained in the MVar.
+  consume x = Unsafe.toLinear2 const () x
 
-new :: Cancellable a => Linear.IO (SendOnce a, RecvOnce a)
+new :: Consumable a => Linear.IO (SendOnce a, RecvOnce a)
 new = Linear.fromSystemIO newSystemIO
   where
-    newSystemIO :: Cancellable a => IO (SendOnce a, RecvOnce a)
+    newSystemIO :: Consumable a => IO (SendOnce a, RecvOnce a)
     newSystemIO =
       -- Use the unrestricted monadic bind.
       let (>>=) = (Unrestricted.>>=) in do
@@ -50,13 +57,13 @@ new = Linear.fromSystemIO newSystemIO
         let finalizer :: IO ()
             finalizer = Unrestricted.tryTakeMVar mvar >>= \case
               Nothing  -> Unrestricted.return ()
-              Just val -> cancelSystemIO val
+              Just val -> Unrestricted.return (consume val)
         weak <- Unrestricted.mkWeakMVar mvar finalizer
         Unrestricted.return (SendOnce weak, RecvOnce weak)
 
-send :: Cancellable a => SendOnce a %1 -> a %1 -> Linear.IO ()
+send :: Consumable a => SendOnce a %1 -> a %1 -> Linear.IO ()
 send (SendOnce weak) x = Linear.deRefWeak weak Linear.>>= \case
-  Nothing   -> cancel x
+  Nothing   -> Linear.return (consume x)
   Just mvar -> Linear.putMVar mvar x
 
 recv :: RecvOnce a %1 -> Linear.IO a
@@ -67,7 +74,8 @@ recv (RecvOnce weak) = Linear.deRefWeak weak Linear.>>= \case
 
 -- * Synchronisation construct
 
-data SyncOnce = SyncOnce (SendOnce ()) (RecvOnce ())
+newtype SyncOnce = SyncOnce (SendOnce (), RecvOnce ())
+  deriving Consumable
 
 newSync :: Linear.IO (SyncOnce, SyncOnce)
 newSync =
@@ -75,20 +83,14 @@ newSync =
   let (>>=) = (Linear.>>=) in do
     (ch_s1, ch_r1) <- new
     (ch_s2, ch_r2) <- new
-    Linear.return (SyncOnce ch_s1 ch_r2, SyncOnce ch_s2 ch_r1)
+    Linear.return (SyncOnce (ch_s1, ch_r2), SyncOnce (ch_s2, ch_r1))
 
 sync :: SyncOnce %1 -> Linear.IO ()
-sync (SyncOnce ch_s ch_r) =
+sync (SyncOnce (ch_s, ch_r)) =
   -- Use the linear monadic bind.
   let (>>) = (Linear.>>) in do
     send ch_s ()
     recv ch_r
-
-instance Cancellable SyncOnce where
-  cancel (SyncOnce ch_s ch_r) =
-    let (>>) = (Linear.>>) in do
-      cancel ch_s
-      cancel ch_r
 
 -- -}
 -- -}

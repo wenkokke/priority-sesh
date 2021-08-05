@@ -15,7 +15,6 @@ module Test.Session where
 
 import Prelude qualified
 import Prelude.Linear hiding (Dual)
-import Control.Cancellable.Linear (Cancellable(..))
 import Control.Concurrent.Linear
 import Control.Concurrent.Session.Linear
 import Control.Functor.Linear
@@ -131,11 +130,11 @@ cancelWorks = TestLabel "cancel" $ TestList
 
 newtype SumServer
   = SumServer (Offer (Recv Int SumServer) (Send Int End))
-  deriving Cancellable
+  deriving Consumable
 
 newtype SumClient
   = SumClient (Select (Send Int SumClient) (Recv Int End))
-  deriving Cancellable
+  deriving Consumable
 
 instance Session SumServer where
   type Dual SumServer = SumClient
@@ -185,26 +184,26 @@ sumWorks = TestLabel "sum" $ TestCase (assert main)
 -- * Cyclic Scheduler
 
 newtype Out a = Out (Recv a (In a))
-  deriving Cancellable
+  deriving Consumable
 
 newtype In a = In (Send a (Out a))
-  deriving Cancellable
+  deriving Consumable
 
-instance Cancellable a => Session (Out a) where
+instance Consumable a => Session (Out a) where
   type Dual (Out a) = In a
   new = bimap Out In <$> new
 
-instance Cancellable a => Session (In a) where
+instance Consumable a => Session (In a) where
   type Dual (In a) = Out a
   new = bimap In Out <$> new
 
-schedNode :: Cancellable a => Out a %1 -> [In a] %1 -> Linear.IO ()
+schedNode :: Consumable a => Out a %1 -> [In a] %1 -> Linear.IO ()
 schedNode (Out s1) (In s2 : rest) = do
   (x, s1) <- recv s1
   s2 <- send (x, s2)
   schedNode s2 (rest ++ [s1])
 
-printNode :: forall a. (Cancellable a, Dupable a, Ord a, FromInteger a, Show a) => Out a %1 -> Linear.IO ()
+printNode :: forall a. (Consumable a, Dupable a, Ord a, FromInteger a, Show a) => Out a %1 -> Linear.IO ()
 printNode = printer0
   where
     print :: Show a => a %1 -> Linear.IO ()

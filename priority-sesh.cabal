@@ -26,8 +26,7 @@ common common-depends
 
 library
   import:             common-depends
-  exposed-modules:    Control.Cancellable.Linear
-                      Control.Concurrent.Linear
+  exposed-modules:    Control.Concurrent.Linear
                       Control.Concurrent.OneShot.Linear
                       Control.Concurrent.Session.Linear
                       Control.Concurrent.Session.DF.Tree.Linear
