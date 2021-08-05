@@ -1,10 +1,10 @@
 module Main where
 
-
-import           Test.HUnit
-import qualified Test.OneShot as OneShot
-import qualified Test.Session as Session
-import qualified Test.Session.Priority as Priority
+import Prelude
+import Test.HUnit
+import Test.OneShot qualified as OneShot
+import Test.Session qualified as Session
+import Test.Priority qualified as Priority
 
 main :: IO Counts
 main = runTestTT tests

@@ -19,6 +19,7 @@ module Data.Type.Nat
 
 -- {-
 
+import Prelude.Linear hiding (Max, Min)
 import Data.Type.Equality (type (==))
 import Data.Type.Bool (If)
 import GHC.TypeNats (Nat(..), CmpNat, type (<=?), type (+), type (*))

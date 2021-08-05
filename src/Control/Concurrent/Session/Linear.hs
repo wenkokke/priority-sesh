@@ -9,6 +9,8 @@
 {-# LANGUAGE TypeFamilyDependencies  #-}
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Control.Concurrent.Session.Linear
   -- Session types and channels
@@ -29,17 +31,18 @@ module Control.Concurrent.Session.Linear
   , offerEither
   ) where
 
-import           Prelude.Linear hiding (Dual, IO)
-import           Control.Exception
-import           Control.Concurrent.Linear
-import qualified Control.Concurrent.OneShot.Linear as OneShot
-import           Control.Functor.Linear
-import           Data.Bifunctor.Linear
-import           Data.Functor.Linear (void)
-import           Data.Kind (Type)
-import           Data.Unrestricted.Linear
-import qualified System.IO.Linear as Linear
-import qualified Unsafe.Linear as Unsafe
+import Prelude.Linear hiding (Dual)
+import Control.Cancellable.Linear
+import Control.Concurrent.Linear
+import Control.Concurrent.OneShot.Linear qualified as OneShot
+import Control.Exception
+import Control.Functor.Linear
+import Data.Bifunctor.Linear
+import Data.Functor.Linear (void)
+import Data.Kind (Type)
+import Data.Unrestricted.Linear
+import System.IO.Linear qualified as Linear
+import Unsafe.Linear qualified as Unsafe
 
 
 -- * Session types
@@ -51,27 +54,22 @@ newtype End      = End OneShot.SyncOnce
 
 -- * Duality and session initiation
 
-class ( Consumable s
+class ( Cancellable s
       , Session (Dual s)
       , Dual (Dual s) ~ s
       ) => Session s where
   type Dual s = result | result -> s
   new :: Linear.IO (s, Dual s)
 
-instance Consumable (Send a s) where
-  consume (Send ch_s) = consume ch_s
+deriving instance (Cancellable a, Session s) => Cancellable (Send a s)
+deriving instance (Cancellable a, Session s) => Cancellable (Recv a s)
+deriving instance Cancellable End
 
-instance Consumable (Recv a s) where
-  consume (Recv ch_r) = consume ch_r
-
-instance Consumable End where
-  consume (End sync) = consume sync
-
-instance Session s => Session (Send a s) where
+instance (Cancellable a, Session s) => Session (Send a s) where
   type Dual (Send a s) = Recv a (Dual s)
   new = bimap Send Recv <$> OneShot.new
 
-instance Session s => Session (Recv a s) where
+instance (Cancellable a, Session s) => Session (Recv a s) where
   type Dual (Recv a s) = Send a (Dual s)
   new = bimap Recv Send . swap <$> OneShot.new
 
@@ -86,7 +84,7 @@ instance Session () where
 
 -- * Communication primitives
 
-send :: Session s => (a, Send a s) %1 -> Linear.IO s
+send :: (Cancellable a, Session s) => (a, Send a s) %1 -> Linear.IO s
 send (x, Send ch_s) = do
   (here, there) <- new
   OneShot.send ch_s (x, there)

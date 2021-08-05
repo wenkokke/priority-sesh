@@ -14,6 +14,8 @@
 {-# LANGUAGE TypeOperators           #-}
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Control.Concurrent.Session.DF.Priority.Linear
   -- Priorities
@@ -42,6 +44,7 @@ module Control.Concurrent.Session.DF.Priority.Linear
   , send
   , recv
   , close
+  , cancel
   -- Binary choice
   , Select
   , Offer
@@ -50,20 +53,22 @@ module Control.Concurrent.Session.DF.Priority.Linear
   , offerEither
   ) where
 
-import           Prelude.Linear hiding (Max, Min, Dual)
-import           Control.Concurrent.Linear
-import qualified Control.Concurrent.OneShot.Linear as OneShot
-import           Control.Functor.Linear as Control
-import           Data.Bifunctor.Linear
-import           Data.Functor.Linear (void)
-import qualified Data.Functor.Linear as Data
-import           Data.Kind (Type)
-import           Data.Type.Nat (Nat(..))
-import qualified Data.Type.Nat as Nat
-import           Data.Type.Priority as Priority
-import qualified System.IO.Linear as Linear
-import           System.IO.Unsafe (unsafePerformIO)
-import qualified Unsafe.Linear as Unsafe
+import Prelude.Linear hiding (Max, Min, Dual)
+import Control.Cancellable.Linear (Cancellable)
+import Control.Cancellable.Linear qualified as Cancellable
+import Control.Concurrent.Linear
+import Control.Concurrent.OneShot.Linear qualified as OneShot
+import Control.Functor.Linear as Control
+import Data.Bifunctor.Linear
+import Data.Functor.Linear (void)
+import Data.Functor.Linear qualified as Data
+import Data.Kind (Type)
+import Data.Type.Nat (Nat(..))
+import Data.Type.Nat qualified as Nat
+import Data.Type.Priority as Priority
+import System.IO.Linear qualified as Linear
+import System.IO.Unsafe (unsafePerformIO)
+import Unsafe.Linear qualified as Unsafe
 
 
 -- * Session types
@@ -71,6 +76,10 @@ import qualified Unsafe.Linear as Unsafe
 newtype Send t (o :: Nat) a s = Send (OneShot.SendOnce (a, Dual s))
 newtype Recv t (o :: Nat) a s = Recv (OneShot.RecvOnce (a, s))
 newtype End  t (o :: Nat)     = End OneShot.SyncOnce
+
+deriving instance (Cancellable a, Session s) => Cancellable (Send t o a s)
+deriving instance (Cancellable a, Session s) => Cancellable (Recv t o a s)
+deriving instance Cancellable (End t o)
 
 
 -- * The |Sesh| communication monad
@@ -89,14 +98,11 @@ newtype Sesh
 unsafeRunSesh :: Sesh t p q a %1 -> Linear.IO a
 unsafeRunSesh (Sesh x) = x
 
-runSeshIO :: forall p q a. (forall t. Sesh t p q a) -> Linear.IO a
-runSeshIO mx = unsafeRunSesh mx
+runSeshIO :: forall p q a. (forall t. Sesh t p q a) %1 -> Linear.IO a
+runSeshIO mx = unsafeRunSesh (mx @())
 
-runSesh :: forall p q a. (forall t. Sesh t p q a) -> a
-runSesh mx = unsafePerformIO (toSystemIO (runSeshIO mx))
-  where
-    toSystemIO :: Linear.IO a %1 -> IO a
-    toSystemIO = Unsafe.coerce
+runSesh :: forall p q a. (forall t. Sesh t p q (Ur a)) -> a
+runSesh mx = unsafePerformIO (Linear.withLinearIO (runSeshIO mx))
 
 ibind :: forall p q p' q' a b t. (q < p') =>
   (a %1 -> Sesh t p' q' b) %1 ->
@@ -151,7 +157,7 @@ instance Control.Functor (Sesh t p q) where
 
 -- * Duality and session initiation
 
-class ( Consumable s      -- ^ Sessions are involutive.
+class ( Cancellable s     -- ^ Sessions are .
       , Session (Dual s)  -- ^ The dual of a session is also a session.
       , Dual (Dual s) ~ s -- ^ Duality is involutive.
       ) => Session s where
@@ -159,20 +165,11 @@ class ( Consumable s      -- ^ Sessions are involutive.
   type Dual s = result | result -> s
   new :: Sesh t 'Top 'Bot (s, Dual s)
 
-instance Consumable (Send t o a s) where
-  consume (Send s) = consume s
-
-instance Consumable (Recv t o a s) where
-  consume (Recv s) = consume s
-
-instance Consumable (End t o) where
-  consume (End s) = consume s
-
-instance Session s => Session (Send t o a s) where
+instance (Cancellable a, Session s) => Session (Send t o a s) where
   type Dual (Send t o a s) = Recv t o a (Dual s)
   new = Sesh $ bimap Send Recv <$> OneShot.new
 
-instance Session s => Session (Recv t o a s) where
+instance (Cancellable a, Session s) => Session (Recv t o a s) where
   type Dual (Recv t o a s) = Send t o a (Dual s)
   new = Sesh $ bimap Recv Send . swap <$> OneShot.new
 
@@ -199,7 +196,7 @@ connect :: (Session s, 'Bot < Min p p', 'Bot < p, 'Bot < p') =>
 connect k1 k2 = new >>>= \(s1, s2) -> fork (k1 s1) >>> k2 s2
 
 -- |Send a value over a channel.
-send :: forall o s a t. Session s => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
+send :: forall o s a t. (Cancellable a, Session s) => (a, Send t o a s) %1 -> Sesh t ('Val o) ('Val o) s
 send (x, Send ch_s) = Sesh $ do
   (here, there) <- unsafeRunSesh new
   OneShot.send ch_s (x, there)
@@ -212,6 +209,10 @@ recv (Recv ch_r) = Sesh $ OneShot.recv ch_r
 -- |Close a session.
 close :: forall o t. End t o %1 -> Sesh t ('Val o) ('Val o) ()
 close (End sync) = Sesh $ OneShot.sync sync
+
+
+cancel :: Cancellable a => a %1 -> Sesh t 'Top 'Bot ()
+cancel x = Sesh $ Cancellable.cancel x
 
 
 -- * Binary choice

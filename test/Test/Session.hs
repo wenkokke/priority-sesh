@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -8,23 +9,25 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GeneralisedNewtypeDeriving #-}
 
 module Test.Session where
 
-import           Control.Concurrent.Linear
-import           Control.Concurrent.Session.Linear
-import           Control.Functor.Linear
-import           Data.Bifunctor.Linear
-import           Data.Functor.Linear (void)
-import qualified Data.V.Linear as V
-import           Debug.Trace.Linear (traceIO)
-import qualified Prelude
-import           Prelude.Linear hiding (Dual, print)
-import           System.IO.Linear (fromSystemIO)
-import qualified System.IO.Linear as Linear
-import           Test.HUnit
-import           Test.HUnit.Linear (assertOutput, assertBlockedIndefinitelyOnMVar)
-import qualified Unsafe.Linear as Unsafe
+import Prelude qualified
+import Prelude.Linear hiding (Dual)
+import Control.Cancellable.Linear (Cancellable(..))
+import Control.Concurrent.Linear
+import Control.Concurrent.Session.Linear
+import Control.Functor.Linear
+import Data.Bifunctor.Linear
+import Data.Functor.Linear (void)
+import Data.V.Linear qualified as V
+import Debug.Trace.Linear (traceIO)
+import System.IO.Linear (fromSystemIO)
+import System.IO.Linear qualified as Linear
+import Test.HUnit
+import Test.HUnit.Linear (assertOutput, assertBlockedIndefinitelyOnMVar)
+import Unsafe.Linear qualified as Unsafe
 
 
 -- * Ping
@@ -114,13 +117,13 @@ cancelWorks = TestLabel "cancel" $ TestList
     -- Server cancels, client tries to receive.
     cancelAndRecv = do
       connect
-        (\s -> return (consume s))
+        (\s -> cancel s)
         (\s -> do ((), ()) <- recv s; return ())
 
     -- Server cancels, client tries to send.
     cancelAndSend = do
       connect
-        (\s -> return (consume s))
+        (\s -> cancel s)
         (\s -> do () <- send ((), s); return ())
 
 
@@ -128,15 +131,11 @@ cancelWorks = TestLabel "cancel" $ TestList
 
 newtype SumServer
   = SumServer (Offer (Recv Int SumServer) (Send Int End))
+  deriving Cancellable
 
 newtype SumClient
   = SumClient (Select (Send Int SumClient) (Recv Int End))
-
-instance Consumable SumServer where
-  consume (SumServer s) = consume s
-
-instance Consumable SumClient where
-  consume (SumClient s) = consume s
+  deriving Cancellable
 
 instance Session SumServer where
   type Dual SumServer = SumClient
@@ -186,29 +185,26 @@ sumWorks = TestLabel "sum" $ TestCase (assert main)
 -- * Cyclic Scheduler
 
 newtype Out a = Out (Recv a (In a))
+  deriving Cancellable
+
 newtype In a = In (Send a (Out a))
+  deriving Cancellable
 
-instance Consumable (Out a) where
-  consume (Out x) = consume x
-
-instance Consumable (In a) where
-  consume (In x) = consume x
-
-instance Session (Out a) where
+instance Cancellable a => Session (Out a) where
   type Dual (Out a) = In a
   new = bimap Out In <$> new
 
-instance Session (In a) where
+instance Cancellable a => Session (In a) where
   type Dual (In a) = Out a
   new = bimap In Out <$> new
 
-schedNode :: Out a %1 -> [In a] %1 -> Linear.IO ()
+schedNode :: Cancellable a => Out a %1 -> [In a] %1 -> Linear.IO ()
 schedNode (Out s1) (In s2 : rest) = do
   (x, s1) <- recv s1
   s2 <- send (x, s2)
   schedNode s2 (rest ++ [s1])
 
-printNode :: forall a. (Dupable a, Ord a, FromInteger a, Show a) => Out a %1 -> Linear.IO ()
+printNode :: forall a. (Cancellable a, Dupable a, Ord a, FromInteger a, Show a) => Out a %1 -> Linear.IO ()
 printNode = printer0
   where
     print :: Show a => a %1 -> Linear.IO ()
@@ -229,7 +225,9 @@ printNode = printer0
       s <- send (x3, s)
       printer0 s
     printer2 False x3 s = do
-      x3 `lseq` s `lseq` return ()
+      cancel x3
+      cancel s
+      return ()
 
 add1Node :: Out Int %1 -> Linear.IO ()
 add1Node (Out s) = do
