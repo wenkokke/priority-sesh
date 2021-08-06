@@ -22,7 +22,7 @@ We colour the Haskell definitions which are a part of Sesh:
 \item[\cs{emerald}] for priorities and type families acting on priorities.
 \end{itemize*}
 
-\subsection{One-shot channels}\label{sec:one-shot}
+\subsection{One-shot Channels}\label{sec:one-shot}
 
 We start by building a small library of \emph{linear} or \emph{one-shot channels}, \ie, channels that must be use \emph{exactly once} to send or receive a value.
 
@@ -94,10 +94,10 @@ Where |fork| forks off a new thread using a linear |forkIO|. (In GV, this operat
 As the |BlockedIndefinitelyOnMVar| check is performed by the runtime, it'll even happen when a channel is dropped for reasons other than consume, such as a process crashing.
 
 
-\subsection{Session-typed channels}\label{sec:sesh}
+\subsection{Session-typed Channels}\label{sec:sesh}
 We use the one-shot channels to build a small library of \emph{session-typed channels} based on the \emph{continuation-passing style} encoding of session types in linear types by \citet{Dardha16,DardhaGS17} and in line with other libraries for Scala \cite{ScalasY16,Scalas2017}, OCaml~\cite{PadFuse}, and Rust~\cite{kokke19}.
 
-\paragraph{An example}
+\paragraph{An Example}
 Let's look at a simple example of a session-typed channel---a multiplication service, which receives two integers, sends back their product, and then terminates:
 \begin{spec}
 type MulServer = RawRecv Int (RawRecv Int (RawSend Int RawEnd))
@@ -211,7 +211,7 @@ cancelAndSend = do u
 \end{center}
 These semantics correspond to EGV~\cite{fowlerlindley19}.
 
-\paragraph{Asynchronous close}
+\paragraph{Asynchronous Close}
 We don't always \emph{want} session-end to involve synchronisation. Unfortunately, the |close| operation is synchronous.
 
 An advantage of defining session types via a type class is that its an \emph{open} class, and we can add new primitives whenever. Let's make the unit type, |()|, a session type:
@@ -269,7 +269,7 @@ instance Session RawSumSrv
 \end{spec}
 
 
-\subsection{Deadlock freedom via process structure}\label{sec:tree-sesh}
+\subsection{Deadlock Freedom via Process Structure}\label{sec:tree-sesh}
 The session-typed channels presented in \cref{sec:sesh} can be used to write deadlocking programs, \eg, by receiving before sending:
 \begin{spec}
 woops :: IO Void
@@ -312,7 +312,7 @@ connect k_1 k_2 = do (s_1, s_2) <- new; fork (k_1 s_1); k_2 s_2
 You can view |connect| as the node constructor for a binary process tree. If the programmer \emph{only} uses |connect|, their process structure is guaranteed to be a \emph{tree}. If they also use standalone |fork|, their process structure is a \emph{forest}. Either way, their programs are guaranteed to be deadlock free.
 
 
-\subsection{Deadlock freedom via priorities}\label{sec:priority-sesh}
+\subsection{Deadlock Freedom via Priorities}\label{sec:priority-sesh}
 The strategy for deadlock freedom presented in \cref{sec:tree-sesh} is simple, but \emph{very} restrictive, since it rules out \emph{all} cyclic communication structures, even the ones which don't deadlock:
 \begin{spec}
   totallyFine :: IO String
@@ -375,7 +375,7 @@ We define strict inequality ($|`LT`|$), minimum (|`Min`|), and maximum (|`Max`|)
 \paragraph{Channels}
 We define |Send o|, |Recv o|, and |End o|, which decorate the \emph{raw} sessions from \cref{sec:sesh} with the priority |o| of the communication action, \ie, it denoted when the communication happens. Duality (|Dual|) preserves these priorities. These are implemented exactly as in \cref{sec:sesh}.
 
-\paragraph{The communication monad}
+\paragraph{The Communication Monad}
 We define a graded monad |Sesh p q|, which decorates |IO| with a lower bound |p| and an upper bound |q| on the priorities of its communication actions, \ie, if you run the monad, it denotes when communication begins and ends.
 
 \begin{spec}
