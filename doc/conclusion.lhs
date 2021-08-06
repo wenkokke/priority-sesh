@@ -2,8 +2,8 @@
 %include linear.fmt
 %include main.fmt
 
-\section{Related work}\label{sec:related}
-\paragraph{Session types in Haskell}
+\section{Related Work}\label{sec:related}
+\paragraph{Session Types in Haskell}
 \begin{table*}
   \caption{Capabilities of various implementations of session types in Haskell~\cite[adapted from][]{orchardyoshida17}.}
   \label{fig:table}
@@ -140,7 +140,7 @@ With respect to deadlock freedom, none of the works above---except \citet{lindle
 
 \citet{orchardyoshida17} summarise the capabilities of the various implementations of session types in Haskell in a table, which we adapted in \cref{fig:table} by adding columns for the various versions of \texttt{priority-sesh}. In general, you may read \kinda as ``Kinda'' and \deffo as a resounding ``Yes!'' For instance, \citet{pucellatov08} only provide \emph{partial} delegation, \citet{neubauerthiemann04}, \citet{pucellatov08}, and \citet{lindleymorris16} still need to use combinators instead of standard Haskell application, abstraction, or variables in \emph{some} places, and \citet{neubauerthiemann04} is only deadlock free on the technicality that they don't support multiple channels.
 
-\paragraph{Session types in other programming languages}
+\paragraph{Session Types in other Programming Languages}
 Session types have been integrated in other programming language paradigms.
 \citet{JML15,ScalasY16,PadFuse} integrate \emph{binary} session types in the \emph{native} host language, without language extensions; this to avoid hindering session types use in practice.
 To obtain this integration of session types without extensions \citet{ScalasY16,PadFuse}) combine \emph{static} typing of input and output actions with \emph{runtime} checking of linearity of channel usage.
@@ -156,7 +156,7 @@ There are several works on implementations of MPST in Java:
 \citet{LMMNSVY2015} adopt a dependently-typed MPST theory to verify MPI programs.
 
 
-\paragraph{Session types, linear logic and deadlock freedom}
+\paragraph{Session Types, Linear Logic and Deadlock Freedom}
 The main line of work regarding deadlock freedom in session-typed systems is that of Curry-Howard correspondences with linear logic \cite{girard87}.
 \citet{CP10} defined a correspondence between session types and dual intuitionistic linear logic and \citet{wadler14} between session types and classical linear logic.
 These works guarantee deadlock freedom \emph{by design} as the communication structures are restricted to trees and due to the \emph{cut} rule, processes share \emph{only} one channel between them.
@@ -171,7 +171,7 @@ Other works on deadlock freedom in session-typed systems include the works by \c
 \citet{kokke19} guarantees deadlock freedom of session types in Rust by enforcing a tree structure of communication actions.
 
 
-\section{Discussion and future work}
+\section{Discussion and Future Work}
 We presented \texttt{priority-sesh}, an implementation of deadlock-free session types in Linear Haskell. Using Linear Haskell allows us to check linearity---or more accurately, have linearity guaranteed for us---without relying on complex type-level machinery. Consequently, we have easy-to-write session types and idiomatic code---in fact, probably \emph{the most} idiomatic code when compared with previous work, though in fairness, all previous work predates Linear Haskell. Unfortunately, there are some drawbacks to using Linear Haskell. Most importantly, Linear Haskell is not very mature at this stage. For instance:
 \begin{itemize}
 \item
@@ -179,7 +179,7 @@ We presented \texttt{priority-sesh}, an implementation of deadlock-free session 
 \item
   There is no integration with \texttt{base} or popular Haskell packages, and given that \texttt{LinearTypes} is an extension, there likely won't be for quite a while. There's \texttt{linear-base}, which provides linear variants of many of the constructs in \texttt{base}. However, \texttt{linear-base} relies heavily on @unsafeCoerce@, which, {ironically}, may affect Haskell's performance.
 \item
-  Generally, there is little integration with the Haskell ecosystem, \eg, one other contribution we made are the formatting directives for Linear Haskell in lhs2\TeX\footnote{\url{https://hackage.haskell.org/package/lhs2tex}}.
+  Generally, there is little integration with the Haskell ecosystem, \eg, one other contribution we made are the formatting directives for Linear Haskell in lhs2\TeX~\cite{lhs2tex}.
 \end{itemize}
 However, we believe that many of these drawbacks will disappear as the Linear Haskell ecosystem matures.
 
