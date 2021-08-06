@@ -4,7 +4,9 @@
 
 \section{Related work}\label{sec:related}
 \paragraph{Session types in Haskell}
-\begin{figure*}
+\begin{table*}
+  \caption{Capabilities of various implementations of session types in Haskell~\cite[adapted from][]{orchardyoshida17}.}
+  \label{fig:table}
   \centering
   \begin{tabular}{l || l l l l l l || l l l}
       \hline
@@ -114,9 +116,7 @@
     &
     & \deffo
   \end{tabular}
-  \caption{Capabilities of various implementations of session types in Haskell~\cite[adapted from][]{orchardyoshida17}.}
-  \label{fig:table}
-\end{figure*}
+\end{table*}
 
 \citet{orchardyoshida17} discuss various approaches to implementing session types in Haskell. Their overview is reproduced below:
 \begin{itemize}
