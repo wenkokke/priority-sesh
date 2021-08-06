@@ -78,7 +78,7 @@
 
 \begin{acks}
   We thank Simon Fowler and April Gon\c{c}alves for comments on the manuscript.
-  This work is supported by the EU HORIZON 2020 MSCA RISE project 778233 “Behavioural Application Program Interfaces” (BehAPI)
+  This work is supported by the EU HORIZON 2020 MSCA RISE project 778233 “Behavioural Application Program Interfaces” (BehAPI).
 \end{acks}
 
 \balance
