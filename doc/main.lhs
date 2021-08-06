@@ -1,5 +1,4 @@
 \documentclass[sigplan,screen]{acmart}
-\citestyle{acmauthoryear}
 
 \let\Bbbk\undefined % acmart conflicts with lhs2TeX
 %include polycode.fmt
@@ -41,8 +40,8 @@
 \copyrightyear{2021}
 \acmSubmissionID{icfpws21haskellmain-p25-p}
 \acmISBN{978-1-4503-8615-9/21/08}
-\acmConference[Haskell '21]{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium}{August 26--27, 2021}{Virtual Event, Republic of Korea}
-\acmBooktitle{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium (Haskell '21), August 26--27, 2021, Virtual Event, Republic of Korea}
+\acmConference[Haskell '21]{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium}{August 26--27, 2021}{Virtual, Republic of Korea}
+\acmBooktitle{Proceedings of the 14th ACM SIGPLAN International Haskell Symposium (Haskell '21), August 26--27, 2021, Virtual, Republic of Korea}
 
 \begin{abstract}
   {Priority Sesh} is a library for session-typed communication in Linear Haskell which offers strong compile-time correctness guarantees. Priority Sesh offers two deadlock-free APIs for session-typed communication. The first guarantees deadlock freedom by restricting the process structure to trees and forests. It is simple and composable, but rules out cyclic structures. The second guarantees deadlock freedom via priorities, which allows the programmer to safely use cyclic structures as well.
