@@ -378,3 +378,9 @@ Finally, the module contains the code for the *finite* cyclic scheduler from §2
 [sesh]: https://github.com/wenkokke/sesh
 [stack]: https://docs.haskellstack.org/en/stable/README/
 [linear-base]: https://github.com/tweag/linear-base/
+
+# TODO
+
+- Factor out `Cancellable a` into a separate newtype which wraps `a` into a `Weak` reference, such that `Cancellable (Send a s)` implements `Consumable` and has a `cancel` method.
+- Provide alias `Send a s` for `Cancellable (Send a s)` in separate module.
+- Rewrite one-shot channels using *unrestricted* constructors, so that we can get rid of the unsafe coerces around the `MVar` functions.

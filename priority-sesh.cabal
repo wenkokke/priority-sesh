@@ -20,21 +20,25 @@ common common-depends
   build-depends:      base        >=4.7 && <5
                     , linear-base >=0.1 && <0.2
   default-language:   Haskell2010
-  default-extensions: ImportQualifiedPost
+  default-extensions: ExplicitNamespaces
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , GADTSyntax
+                    , ImportQualifiedPost
+                    , InstanceSigs
                     , LinearTypes
                     , RebindableSyntax
 
 library
   import:             common-depends
-  exposed-modules:    Control.Concurrent.Linear
-                      Control.Concurrent.OneShot.Linear
-                      Control.Concurrent.Session.Linear
-                      Control.Concurrent.Session.DF.Tree.Linear
-                      Control.Concurrent.Session.DF.Priority.Linear
-                      Data.Type.Nat
-                      Data.Type.Priority
-  other-modules:      Control.Concurrent.MVar.Linear
-                      System.Mem.Weak.Linear
+  exposed-modules:    Control.Concurrent.Channel.OneShot
+                    , Control.Concurrent.Linear
+                    , Control.Concurrent.Channel.Session
+                    , Control.Concurrent.Channel.Session.DF
+                    , Data.Type.Nat.Extra
+                    , Data.Type.Period
+                    , Data.Type.Priority
+                    , System.IO.Linear.Cancelable
   hs-source-dirs:     src
 
 test-suite test-priority-sesh
@@ -44,7 +48,7 @@ test-suite test-priority-sesh
   other-modules:      Test.HUnit.Linear
                       Test.OneShot
                       Test.Session
-                      Test.Priority
+                      Test.Session.DF
   hs-source-dirs:     test
   build-depends:      HUnit    >=1.6 && <1.7
                     , silently >=1.2 && <2.0

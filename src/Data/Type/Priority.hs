@@ -1,26 +1,30 @@
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Type.Priority
-  ( Priority (..)
+  ( Priority(..)
+  , type (<)
   , type Min
   , type Max
-  , type (+)
-  , type (<)
   ) where
 
-import           Data.Kind (Constraint)
-import           Data.Type.Bool (If)
-import           Data.Type.Nat (Nat(..), N0, N1, N2, N3, N4, N5, N6, N7, N8, N9)
-import qualified Data.Type.Nat as Nat
+import Data.Kind           (Constraint)
+import Data.Type.Bool      (If)
+import Data.Type.Nat.Extra (Nat(..))
+import Data.Type.Nat.Extra qualified as Nat
 
+-- * Priorities
+
+-- | A 'Priority' is an abstract representation of the time at which some event
+--   happens.
 data Priority
-  = Bot
-  | Val Nat
-  | Top
+  = Bot     -- ^ The event happens before every other event.
+  | Val Nat -- ^ A concrete time, represented by a natural number.
+  | Top     -- ^ The event happens after every other event.
 
 -- | Type-level '<' as a constraint
 type family (p :: Priority) < (q :: Priority) :: Constraint where
@@ -44,11 +48,3 @@ type family Max (p :: Priority) (q :: Priority) :: Priority where
   Max ('Val n) ('Val m) = 'Val (Nat.Max n m)
   Max p        'Top     = 'Top
   Max 'Top     q        = 'Bot
-
--- | Type-level '+'
-type family (p :: Priority) + (q :: Priority) :: Priority where
-  'Bot   + q      = 'Bot
-  p      + 'Bot   = 'Bot
-  'Val m + 'Val n = 'Val (m Nat.+ n)
-  'Top   + q      = 'Top
-  p      + 'Top   = 'Top

@@ -1,13 +1,13 @@
-resolver: lts-17.5
-compiler: ghc-9.0.1
+resolver: nightly-2021-08-29
 
-allow-newer: true
+compiler: ghc-9.0.1
+compiler-check: match-exact
+
 system-ghc: true
 
 packages:
 - '.'
 
 extra-deps:
-# linear-base
 - git: https://github.com/tweag/linear-base.git
-  commit: f964890ef4470d13fe87b2c273d785e180ad19c3
+  commit: 5b755ac0ce07a3e6c43740dd4d3004d80166d90b

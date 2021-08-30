@@ -35,17 +35,14 @@ $(TEXDIR)/$(MAIN).pdf: $(TEXSRC) $(LHSSRC:.lhs=.tex) require-latexmk
 # Generate conference artifact
 ################################################################################
 
-.PHONY: artifact
-artifact: priority-sesh.tar.gz
-
-priority-sesh.tar.gz:
-	tar -czvf priority-sesh.tar.gz	\
-		LICENSE												\
-		README.md											\
-		README.pdf										\
-		src/													\
-		test/													\
-		priority-sesh.cabal						\
+artifact.tar.gz:
+	tar -czvf artifact.tar.gz	\
+		LICENSE									\
+		README.md								\
+		README.pdf							\
+		src/										\
+		test/										\
+		priority-sesh.cabal			\
 		stack.yaml
 
 
@@ -53,18 +50,27 @@ priority-sesh.tar.gz:
 # Generate ArXiv package
 ################################################################################
 
-.PHONY: arxiv
-arxiv: doc/priority-sesh.zip
-
-doc/priority-sesh.zip: clean build
-	cd doc && zip arxiv.zip			\
-		00README.XXX							\
-	  ACM-Reference-Format.bst	\
-		*.tex											\
-		preamble/*.tex						\
-		*.bib											\
+paper-src-arxiv.zip: clean build
+	cd doc && zip ../paper-src-arxiv.zip	\
+		00README.XXX												\
+	  ACM-Reference-Format.bst						\
+		*.tex																\
+		preamble/*.tex											\
+		*.bib																\
 		*.bbl
 
+################################################################################
+# Generate paper submission package
+################################################################################
+
+paper-src.zip: clean build
+	cd doc && zip ../paper-src.zip	\
+	  acmart.cls										\
+	  ACM-Reference-Format.bst			\
+		*.tex													\
+		preamble/*.tex								\
+		*.bib													\
+		*.bbl
 
 ################################################################################
 # Dependencies with readable error messages

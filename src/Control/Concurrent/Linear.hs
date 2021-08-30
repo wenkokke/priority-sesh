@@ -1,31 +1,30 @@
-{-# LANGUAGE FlexibleContexts        #-}
-{-# LANGUAGE GADTs                   #-}
-{-# LANGUAGE LinearTypes             #-}
-{-# LANGUAGE NoImplicitPrelude       #-}
-{-# LANGUAGE RebindableSyntax        #-}
-{-# LANGUAGE TypeFamilies            #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-
 module Control.Concurrent.Linear
   ( ThreadId
   , forkIO
+  , forkIO_
   ) where
 
-import           Prelude.Linear
-import           Control.Concurrent (ThreadId)
-import qualified Control.Concurrent as NonLinear
-import           Control.Functor.Linear
-import qualified System.IO.Linear as Linear
-import qualified Unsafe.Linear as Unsafe
+import Prelude.Linear
+import Control.Concurrent       (ThreadId)
+import Control.Concurrent       qualified as Unrestricted (forkIO)
+import Data.Functor.Linear      qualified as Linear (void)
+import Data.Unrestricted.Linear (Movable(..))
+import System.IO.Linear         qualified as Linear
+import Unsafe.Linear            qualified as Unsafe (coerce, toLinear)
 
--- |Variant of 'NonLinear.forkIO' for linear 'Linear.IO'.
+-- |Creates a new thread to run the 'IO' computation passed as the first
+--  argument, and returns the 'ThreadId' of the newly created thread.
 forkIO :: Linear.IO () %1 -> Linear.IO ThreadId
-forkIO = Linear.fromSystemIO . linForkIO . toSystemIO
+forkIO action = Linear.fromSystemIO (forkSystemIO (toSystemIO action))
   where
+    forkSystemIO :: IO () %1 -> IO ThreadId
+    forkSystemIO = Unsafe.toLinear Unrestricted.forkIO
     toSystemIO :: Linear.IO a %1 -> IO a
     toSystemIO = Unsafe.coerce
-    linForkIO :: IO () %1 -> IO ThreadId
-    linForkIO = Unsafe.toLinear NonLinear.forkIO
+
+-- |Variant of 'forkIO' which discards the 'ThreadId'.
+forkIO_ :: Linear.IO () %1 -> Linear.IO ()
+forkIO_ action = Linear.void (forkIO action)
 
 instance Consumable ThreadId where
-  consume threadId = Unsafe.toLinear (\_ -> ()) threadId
+  consume threadId = Unsafe.toLinear (const ()) threadId

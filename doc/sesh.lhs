@@ -36,8 +36,9 @@ newtype SendOnce  a = MkSendOnce (MVar a)
 newtype RecvOnce  a = MkRecvOnce (MVar a)
 
 newOneShot :: IO (SendOnce a, RecvOnce a)
-newOneShot = do  (mvar_s, mvar_r) <- dup2 <$> newEmptyMVar
-                 return (MkSendOnce (unur mvar_s), MkRecvOnce (unur mvar_r))
+newOneShot = do
+  (mvar_s, mvar_r) <- dup2 <$> newEmptyMVar
+  return (MkSendOnce (unur mvar_s), MkRecvOnce (unur mvar_r))
 \end{spec}
 The |newEmptyMVar| function returns an \emph{unrestricted} |MVar|, which may be used non-linearly, \ie as many times as one wants. The |dup2| function creates two (unrestricted) copies of the |MVar|. The |unur| function casts each \emph{unrestricted} copy to a \emph{linear} copy. Thus, we end up with two copies of an |MVar|, each of which must be used \emph{exactly once}.
 
