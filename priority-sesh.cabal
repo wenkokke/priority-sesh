@@ -50,6 +50,7 @@ test-suite test-priority-sesh
                       Test.Session
                       Test.Session.DF
   hs-source-dirs:     test
-  build-depends:      HUnit    >=1.6 && <1.7
-                    , silently >=1.2 && <2.0
+  build-depends:      hint
+                    , HUnit
+                    , silently
                     , priority-sesh

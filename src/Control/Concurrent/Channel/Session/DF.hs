@@ -28,6 +28,7 @@ module Control.Concurrent.Channel.Session.DF
     close,
     fork,
     connect,
+    cancel,
     Offer,
     Select,
     offer,
@@ -47,6 +48,7 @@ import Prelude.Linear (($))
 import System.IO qualified as System (IO)
 import System.IO.Linear qualified as Linear
 import System.IO.Linear.Cancelable (Cancelable)
+import System.IO.Linear.Cancelable qualified as Cancelable
 import System.IO.Unsafe (unsafePerformIO)
 import Unsafe.Linear qualified as Unsafe
 
@@ -188,6 +190,10 @@ fork action =
 -- | Create a new thread and connect it to the current thread with a new channel.
 connect :: (ParallelTo p < p, Session s) => (s %1 -> Sesh t p ()) %1 -> Sesh t (ParallelTo p) (Dual s)
 connect child = new >>>= \(here, there) -> fork (child there) >>> ireturn here
+
+-- | Variant of 'Cancelable.cancel' which runs in the 'Sesh' monad.
+cancel :: Cancelable s => s %1 -> Sesh t Empty ()
+cancel s = Sesh $ Cancelable.cancel s
 
 -- | An alias for receiving a single choice operator, e.g., 'Either s1 s2'.
 type Offer (t :: SessionToken) (o :: Nat) (op :: SessionToken -> Nat -> Type) = Recv t o (op t (o + 1)) ()

@@ -12,14 +12,14 @@ main = runTestTT tests
     tests :: Test
     tests =
       TestList
-        [ OneShot.pingWorks, -- Basic.
-          OneShot.cancelWorks, -- Cancellation.
-          Session.pingWorks, -- Basic.
-          Session.calcWorks, -- Choice.
-          Session.cancelWorks, -- Cancellation.
-          Session.sumWorks, -- Recursion.
-          SessionDF.pingWorks -- Basic.
-          --      , Priority.calcWorks   -- Choice.
-          --      , Priority.cancelWorks -- Cancellation.
-          --      , Priority.schedWorks  -- Cyclic structure (non-recursive).
+        [ OneShot.pingWorks, -- Basic
+          OneShot.cancelWorks, -- Cancellation
+          Session.pingWorks, -- Basic
+          Session.calcWorks, -- Choice
+          Session.cancelWorks, -- Cancellation
+          Session.sumWorks, -- Recursion
+          SessionDF.pingWorks, -- Basic
+          SessionDF.calcWorks, -- Choice
+          SessionDF.cancelWorks, -- Cancellation
+          SessionDF.deadlockFails -- Deadlock
         ]

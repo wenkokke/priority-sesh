@@ -115,6 +115,7 @@ cancelWorks =
       () <- send ((), s)
       return ()
 
+
 -- * Summation server
 
 type SumServer = Recv SumOp ()
