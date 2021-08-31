@@ -27,6 +27,9 @@ module Control.Concurrent.Channel.Session.DF
     recv,
     close,
     fork,
+    connect,
+    Offer,
+    Select,
     offer,
     select,
   )
@@ -36,11 +39,10 @@ import Control.Concurrent.Channel.OneShot qualified as OneShot
 import Control.Concurrent.Linear (forkIO_)
 import Control.Functor.Linear (Functor (..), Monad (..), return)
 import Data.Kind (Type)
-import Data.Type.Period (At, Empty, Period (..), type (+), type (<))
+import Data.Type.Period (At, Empty, ParallelTo, Period (..), type (<), type (<>))
 import Data.Type.Priority (Priority (..))
-import Data.Unrestricted.Linear (Consumable (..), Ur (..), unur)
-import GHC.TypeNats (Nat)
-import GHC.TypeNats qualified as Nat
+import Data.Unrestricted.Linear (Consumable (..), Movable (..), Ur (..))
+import GHC.TypeNats (Nat, type (+))
 import Prelude.Linear (($))
 import System.IO qualified as System (IO)
 import System.IO.Linear qualified as Linear
@@ -79,13 +81,13 @@ runSeshIO :: (forall t. Sesh t p a) %1 -> Linear.IO a
 runSeshIO action = unsafeRunSeshIO (action @'SessionToken)
 
 -- | Runs a 'Sesh' action, encapsulating the usage of 'IO'.
-runSesh :: (forall t. Sesh t p (Ur a)) %1 -> a
+runSesh :: Movable a => (forall t. Sesh t p a) %1 -> a
 runSesh action = runIO (toSystemIO (runSeshIO action))
   where
     runIO :: System.IO a %1 -> a
     runIO action = Unsafe.toLinear unsafePerformIO action
-    toSystemIO :: Linear.IO (Ur a) %1 -> System.IO a
-    toSystemIO action = Unsafe.coerce (fmap unur action)
+    toSystemIO :: Movable a => Linear.IO a %1 -> System.IO a
+    toSystemIO action = Unsafe.coerce action
 
 -- | Inject a value into the 'Sesh' type. See 'return'.
 ireturn :: a %1 -> Sesh t Empty a
@@ -93,12 +95,12 @@ ireturn a = Sesh $ return a
 
 -- | Sequentially compose two 'Sesh' actions, passing any value produced by the
 --   first as an argument to the second. See '>>='.
-(>>>=) :: (p1 < p2) => Sesh t p1 a %1 -> (a %1 -> Sesh t p2 b) %1 -> Sesh t (p1 + p2) b
+(>>>=) :: (p1 < p2) => Sesh t p1 a %1 -> (a %1 -> Sesh t p2 b) %1 -> Sesh t (p1 <> p2) b
 action >>>= f = Sesh $ unsafeRunSeshIO action >>= \a -> unsafeRunSeshIO (f a)
 
 -- | Sequentially compose two 'Sesh' actions, discarding the unit value produced
 --   by the first. See '>>'.
-(>>>) :: (p1 < p2) => Sesh t p1 () %1 -> Sesh t p2 b %1 -> Sesh t (p1 + p2) b
+(>>>) :: (p1 < p2) => Sesh t p1 () %1 -> Sesh t p2 b %1 -> Sesh t (p1 <> p2) b
 action1 >>> action2 = action1 >>>= \() -> action2
 
 -- | A channel endpoint over which one sends an 'a' before continuing as 's'.
@@ -178,25 +180,66 @@ close (End syncOnce) =
     OneShot.sync syncOnce
 
 -- | Create a child process.
-fork :: Sesh t (begin :-: end) () %1 -> Sesh t (begin :-: 'Bot) ()
+fork :: Sesh t p () %1 -> Sesh t (ParallelTo p) ()
 fork action =
   Sesh $
     forkIO_ (unsafeRunSeshIO action)
 
--- |
-offer :: forall o p s t op a. (At o < p) => Recv t o op () %1 -> (op %1 -> Sesh t p a) %1 -> Sesh t (At o + p) a
-offer s match =
-  recv s >>>= \(op, ()) -> match op
+-- | Create a new thread and connect it to the current thread with a new channel.
+connect :: (ParallelTo p < p, Session s) => (s %1 -> Sesh t p ()) %1 -> Sesh t (ParallelTo p) (Dual s)
+connect child = new >>>= \(here, there) -> fork (child there) >>> ireturn here
 
--- |
-select :: forall o s t op. (Session s, Consumable op) => (Dual s %1 -> op) -> Send t o op () -> Sesh t (At o) s
-select label s =
-  new >>>= \(here, there) ->
-    send (label there, s)
-      >>> ireturn here
+-- | An alias for receiving a single choice operator, e.g., 'Either s1 s2'.
+type Offer (t :: SessionToken) (o :: Nat) (op :: SessionToken -> Nat -> Type) = Recv t o (op t (o + 1)) ()
+
+-- | Helper for offering choice based on a data type.
+--
+-- @
+--     data CalcOp t o
+--       = Neg (Recv t o Int (Send t (o + 2) Int (End t (o + 3))))
+--       | Add (Recv t o Int (Recv t (o + 1) Int (Send t (o + 2) Int (End t (o + 3)))))
+--
+--     calcServer :: Recv t 0 (CalcOp t 1) () %1 -> Sesh t ('Val 0 :-: 'Val 4) ()
+--     calcServer s = offer s $ \case
+--       -- Offer negation:
+--       Neg s -> do
+--         (x, s) <- recv s
+--         s <- send (negate x, s)
+--         close s
+--
+--       -- Offer addition:
+--       Add s -> do
+--         (x, s) <- recv s
+--         (y, s) <- recv s
+--         s <- send (x + y, s)
+--         close s
+-- @
+offer :: forall o p s t op a. (At o < p) => Offer t o op %1 -> (op t (o + 1) %1 -> Sesh t p a) %1 -> Sesh t (At o <> p) a
+offer s match = recv s >>>= \(op, ()) -> match op
+
+-- | An alias for sending a single choice operator, e.g., 'Either s1 s2'
+type Select (t :: SessionToken) (o :: Nat) (op :: SessionToken -> Nat -> Type) = Send t o (op t (o + 1)) ()
+
+-- | Helper for selecting choice based on a data type.
+--
+-- @
+--     data CalcOp t o
+--       = Neg (Recv t o Int (Send t (o + 2) Int (End t (o + 3))))
+--       | Add (Recv t o Int (Recv t (o + 1) Int (Send t (o + 2) Int (End t (o + 3)))))
+--
+--     negClient :: Send t 0 (CalcOp t 1) () %1 -> Sesh t ('Val 0 :-: 'Val 4) Bool
+--     negClient s0 = do
+--       s1 <- select Neg s0
+--       s2 <- send (42, s1)
+--       (r, s3) <- recv s2
+--       close s3
+--       return (r == -42)
+-- @
+select :: forall o s t op. (Session s, Consumable (op t (o + 1))) => (Dual s %1 -> op t (o + 1)) %1 -> Select t o op %1 -> Sesh t (At o) s
+select label s = new >>>= \(here, there) -> send (label there, s) >>> ireturn here
 
 -- |
 type family Lift (o :: Nat) (s :: Type) :: Type where
-  Lift o1 (Send t o2 a s) = Send t (o1 Nat.+ o2) a (Lift o1 s)
-  Lift o1 (Recv t o2 a s) = Recv t (o1 Nat.+ o2) a (Lift o1 s)
-  Lift o1 (End t o2) = End t (o1 Nat.+ o2)
+  Lift o1 (Send t o2 a s) = Send t (o1 + o2) a (Lift o1 s)
+  Lift o1 (Recv t o2 a s) = Recv t (o1 + o2) a (Lift o1 s)
+  Lift o1 (End t o2) = End t (o1 + o2)

@@ -8,8 +8,9 @@ module Test.Session.DF where
 import Control.Concurrent.Channel.Session.DF
 import Control.Concurrent.Linear (forkIO_)
 import Data.Proxy (Proxy (..))
-import Data.Type.Period (At, Empty, Period (..), type (+), type (<))
+import Data.Type.Period (At, Empty, Period (..), type (<), type (<>))
 import Data.Type.Priority (Priority (..))
+import GHC.TypeNats (type (+))
 import Prelude.Linear hiding (Dual)
 import System.IO.Linear qualified as Linear
 import System.IO.Linear.Cancelable (Cancelable (..))
@@ -21,22 +22,79 @@ import Unsafe.Linear qualified as Unsafe
 
 -- | Test sending a ping across threads.
 pingWorks :: Test
-pingWorks = TestLabel "ping" $ TestCase (assert main)
+pingWorks = TestLabel "ping" $ TestCase (assert (runSeshIO main))
   where
-    ping :: Send t 0 () (End t 1) %1 -> Sesh t ('Val 0 :-: 'Val 1) ()
-    ping s = do
-      s <- send @0 ((), s)
-      close @1 s
-    pong :: Recv t 0 () (End t 1) %1 -> Sesh t ('Val 0 :-: 'Val 1) ()
-    pong s = do
-      ((), s) <- recv @0 s
-      close @1 s
-
-    main :: Sesh t ('Val 0 :-: 'Val 1) ()
     main = do
       (here, there) <- new
-      fork _
-      _
+
+      fork $ do
+        there <- send @0 ((), there)
+        close @1 there
+
+      ((), here) <- recv @0 here
+      close @1 here
+
+-- * Calculator Server
+
+data CalcOp t o
+  = Neg (Recv t o Int (Send t (o + 2) Int (End t (o + 3))))
+  | Add (Recv t o Int (Recv t (o + 1) Int (Send t (o + 2) Int (End t (o + 3)))))
+
+instance Consumable (CalcOp t o) where
+  consume (Neg s) = consume s
+  consume (Add s) = consume s
+
+-- | The calculator server offers a choice between various calculations.
+calcServer :: Offer t 0 CalcOp %1 -> Sesh t ('Val 0 :-: 'Val 4) ()
+calcServer s = offer s $ \case
+  -- Offer negation:
+  Neg s -> do
+    (x, s) <- recv s
+    s <- send (negate x, s)
+    close s
+
+  -- Offer addition:
+  Add s -> do
+    (x, s) <- recv s
+    (y, s) <- recv s
+    s <- send (x + y, s)
+    close s
+
+-- | The negation client uses the negation action of the calculator server.
+negClient :: Select t 0 CalcOp %1 -> Sesh t ('Val 0 :-: 'Val 4) Bool
+negClient s0 = do
+  s1 <- select Neg s0
+  s2 <- send (42, s1)
+  (r, s3) <- recv s2
+  close s3
+  return (r == -42)
+
+-- | The addition client uses the addition action of the calculator server.
+addClient :: Select t 0 CalcOp %1 -> Sesh t ('Val 0 :-: 'Val 4) Bool
+addClient s = do
+  s <- select Add s
+  s <- send (4, s)
+  s <- send (5, s)
+  (r, s) <- recv s
+  close s
+  return (r == 9)
+
+calcWorks :: Test
+calcWorks =
+  TestLabel "calc" $
+    TestList
+      [ TestLabel "neg" $ TestCase (assert (runSesh negMain)),
+        TestLabel "add" $ TestCase (assert (runSesh addMain))
+      ]
+  where
+    negMain = do
+      (here, there) <- new
+      fork (calcServer there)
+      negClient here
+    addMain = do
+      (here, there) <- new
+      fork (calcServer there)
+      addClient here
 
 -- * Ping
 
@@ -212,10 +270,14 @@ schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO conf))
 
 -- * Rebindable Syntax
 
+fail :: String -> Sesh t p a
 fail = error
 
-(>>) = (>>>)
+return :: a %1 -> Sesh t Empty a
+return = ireturn
 
+(>>=) :: (p1 < p2) => Sesh t p1 a %1 -> (a %1 -> Sesh t p2 b) %1 -> Sesh t (p1 <> p2) b
 (>>=) = (>>>=)
 
-return = ireturn
+(>>) :: (p1 < p2) => Sesh t p1 () %1 -> Sesh t p2 b %1 -> Sesh t (p1 <> p2) b
+(>>) = (>>>)

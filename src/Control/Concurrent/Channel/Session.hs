@@ -123,24 +123,53 @@ connect child = do
   forkIO_ (child there)
   return here
 
+-- | An alias for receiving a single choice operator, e.g., 'Either s1 s2'.
+type Offer op = Recv op ()
+
 -- | Helper for offering choice based on a data type.
 --
 -- @
---     coin :: Recv (Either Heads Tails) %1 -> Linear.IO ()
---     coin s = offer s $ \case
---                Left  Heads -> print "heads"
---                Right Tails -> print "tails"
+--     data CalcOp
+--       = Neg (Recv Int (Send Int End))
+--       | Add (Recv Int (Recv Int (Send Int End)))
+--
+--     calcServer :: Offer CalcOp %1 -> Linear.IO ()
+--     calcServer s = offer s $ \case
+--       -- Offer negation:
+--       Neg s -> do
+--         (x, s) <- recv s
+--         s <- send (negate x, s)
+--         close s
+--
+--       -- Offer addition:
+--       Add s -> do
+--         (x, s) <- recv s
+--         (y, s) <- recv s
+--         s <- send (x + y, s)
+--         close s
 -- @
-offer :: Recv op () %1 -> (op %1 -> Linear.IO a) %1 -> Linear.IO a
+offer :: Offer op %1 -> (op %1 -> Linear.IO a) %1 -> Linear.IO a
 offer s match = do
   (op, unit) <- recv s
   unit `lseq` match op
 
+-- | An alias for sending a single choice operator, e.g., 'Either s1 s2'.
+type Select op = Send op ()
+
 -- | Helper for selecting choice based on a data type.
 --
 -- @
---     toss :: Send (Either Heads Tails) %1 -> Linear.IO ()
---     toss s = select Left Heads
+--     data CalcOp
+--       = Neg (Recv Int (Send Int End))
+--       | Add (Recv Int (Recv Int (Send Int End)))
+--
+--     negClient :: Select CalcOp %1 -> Linear.IO Bool
+--     negClient s = do
+--       s <- select Neg s
+--       s <- send (42, s)
+--       (r, s) <- recv s
+--       close s
+--       return (r == -42)
 -- @
 select :: (Session s, Consumable op) => (Dual s %1 -> op) %1 -> Send op () %1 -> Linear.IO s
 select label s = do

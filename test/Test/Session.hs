@@ -22,11 +22,14 @@ pingWorks = TestLabel "ping" $ TestCase (assert main)
   where
     main :: Linear.IO ()
     main = do
-      s <- connect $ \s -> do
-        s <- send ((), s)
-        close s
-      ((), s) <- recv s
-      close s
+      (here, there) <- new
+
+      forkIO_ $ do
+        there <- send ((), there)
+        close there
+
+      ((), here) <- recv here
+      close here
 
 -- * Calculator Server
 
