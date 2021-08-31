@@ -1,19 +1,20 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE KindSignatures  #-}
-{-# LANGUAGE TypeFamilies    #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Type.Period
-  ( Period(..)
-  , Empty
-  , At
-  , type (<)
-  , type (+)
-  ) where
+  ( Period (..),
+    Empty,
+    At,
+    type (<),
+    type (+),
+  )
+where
 
-import Data.Kind          (Constraint)
-import Data.Type.Priority (Priority(..))
+import Data.Kind (Constraint)
+import Data.Type.Priority (Priority (..))
 import Data.Type.Priority qualified as Priority
 
 -- * Priority bounds
@@ -36,7 +37,6 @@ type From o = 'Val o :-: 'Bot
 --
 -- >>> ('Val 0 :-: 'Val 2) + ('Val 5 :-: 'Val 8)
 -- 'Val 0 :-: 'Val 8
---
 type family (p1 :: Period) + (p2 :: Period) :: Period where
   (begin1 :-: end1) + (begin2 :-: end2) =
     ((begin1 `Priority.Min` begin2) :-: (end1 `Priority.Max` end2))
@@ -44,4 +44,4 @@ type family (p1 :: Period) + (p2 :: Period) :: Period where
 -- | A constraint which checks if the first 'Period' ends before the second
 --   'Period' begins.
 type family (p1 :: Period) < (p2 :: Period) :: Constraint where
-  (begin1 :-: end1) < (begin2 :-: end2) = end1 Priority.< begin2
+  (_begin1 :-: end1) < (begin2 :-: _end2) = end1 Priority.< begin2

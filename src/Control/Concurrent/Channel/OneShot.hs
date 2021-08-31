@@ -2,38 +2,38 @@
 {-# LANGUAGE StandaloneDeriving #-}
 
 module Control.Concurrent.Channel.OneShot
-  (
-  -- * One-shot channels
-    SendOnce
-  , RecvOnce
-  , new
-  , send
-  , recv
-  , CommunicationException(..)
+  ( -- * One-shot channels
+    SendOnce,
+    RecvOnce,
+    new,
+    send,
+    recv,
+    CommunicationException (..),
 
-  -- * Synchronisation
-  , SyncOnce
-  , newSync
-  , sync
-  ) where
+    -- * Synchronisation
+    SyncOnce,
+    newSync,
+    sync,
+  )
+where
 
+import Control.Concurrent.MVar (MVar)
+import Control.Concurrent.MVar qualified as MVar
+import Control.Exception (BlockedIndefinitelyOnMVar (..), Exception, catch, throwIO)
+import Control.Functor.Linear qualified as Linear (Monad (..), return)
+import Control.Monad qualified as Unrestricted (Monad (..))
+import Data.Unrestricted.Linear (Consumable (..), Ur (..))
 import Prelude.Linear
-import Control.Monad               qualified as Unrestricted (Monad(..))
-import Control.Functor.Linear      qualified as Linear (Monad(..), return)
-import Control.Concurrent.MVar     (MVar)
-import Control.Concurrent.MVar     qualified as MVar
-import Control.Exception           (Exception, BlockedIndefinitelyOnMVar(..), throwIO, catch)
-import Data.Unrestricted.Linear    (Ur(..), Consumable(..))
-import System.Mem.Weak             (Weak)
-import System.Mem.Weak             qualified as Weak
-import System.IO                   qualified as Unrestricted (IO)
-import System.IO.Linear            qualified as Linear (IO, fromSystemIO, fromSystemIOU)
-import System.IO.Linear.Cancelable (Cancelable(..))
-import Unsafe.Linear               qualified as Unsafe (toLinear)
+import System.IO qualified as Unrestricted (IO)
+import System.IO.Linear qualified as Linear (IO, fromSystemIO, fromSystemIOU)
+import System.IO.Linear.Cancelable (Cancelable (..))
+import System.Mem.Weak (Weak)
+import System.Mem.Weak qualified as Weak
+import Unsafe.Linear qualified as Unsafe (toLinear)
 
 data CommunicationException
   = SenderCanceled
-  deriving Show
+  deriving (Show)
 
 instance Exception CommunicationException
 
@@ -57,7 +57,6 @@ data RecvOnce a where
 -- instead, which does not rely on the garbage collector.
 --
 
-
 instance Consumable (SendOnce a) where
   consume (SendOnce _weak) = ()
 
@@ -70,32 +69,34 @@ instance Cancelable (SendOnce a) where
 instance Cancelable (RecvOnce a) where
   cancel (RecvOnce weak) = cancel weak
 
-
 -- | Create a new one-shot channel.
 new :: Consumable a => Linear.IO (SendOnce a, RecvOnce a)
-new = Linear.fromSystemIO $
-  let (>>=) = (Unrestricted.>>=) in do
-    mvar <- MVar.newEmptyMVar
-    weak <- MVar.mkWeakMVar mvar (finalizeMVar mvar)
-    Unrestricted.return (SendOnce weak, RecvOnce weak)
+new =
+  Linear.fromSystemIO $
+    let (>>=) = (Unrestricted.>>=)
+     in do
+          mvar <- MVar.newEmptyMVar
+          weak <- MVar.mkWeakMVar mvar (finalizeMVar mvar)
+          Unrestricted.return (SendOnce weak, RecvOnce weak)
   where
     finalizeMVar :: Consumable a => MVar a -> IO ()
     finalizeMVar mvar =
-      let (>>=) = (Unrestricted.>>=) in do
-        maybeValue <- MVar.tryTakeMVar mvar
-        case maybeValue of
-          Nothing    -> Unrestricted.return ()
-          Just value -> Unrestricted.return (consume value)
+      let (>>=) = (Unrestricted.>>=)
+       in do
+            maybeValue <- MVar.tryTakeMVar mvar
+            case maybeValue of
+              Nothing -> Unrestricted.return ()
+              Just value -> Unrestricted.return (consume value)
 
 -- | Send a value over a one-shot sender.
 send :: Consumable a => SendOnce a %1 -> a %1 -> Linear.IO ()
 send sender a =
-  let (>>=) = (Linear.>>=) ; fail = error in do
-    Ur maybeMVar <- unsafeDeRefSendOnce sender
-    case maybeMVar of
-      Nothing   -> Linear.return (consume a)
-      Just mvar -> unsafePutMVar mvar a
-
+  let (>>=) = (Linear.>>=); fail = error
+   in do
+        Ur maybeMVar <- unsafeDeRefSendOnce sender
+        case maybeMVar of
+          Nothing -> Linear.return (consume a)
+          Just mvar -> unsafePutMVar mvar a
   where
     -- Dereference a one-shot sender to an unrestricted 'MVar'.
     unsafeDeRefSendOnce :: SendOnce a %1 -> Linear.IO (Ur (Maybe (MVar a)))
@@ -107,16 +108,16 @@ send sender a =
 
 -- | Receive a value over a one-shot receiver.
 recv :: RecvOnce a %1 -> Linear.IO a
-recv (RecvOnce weak) = Linear.fromSystemIO $
-  let (>>=) = (Unrestricted.>>=) in do
-    maybeMVar <- Weak.deRefWeak weak
-    case maybeMVar of
-      Nothing   -> throwIO SenderCanceled
-      Just mvar -> do
-        -- NOTE: 'takeMVar' may throw a 'BlockedIndefinitelyOnMVar' exception
-        MVar.takeMVar mvar `catch` \BlockedIndefinitelyOnMVar -> throwIO SenderCanceled
-
-
+recv (RecvOnce weak) =
+  Linear.fromSystemIO $
+    let (>>=) = (Unrestricted.>>=)
+     in do
+          maybeMVar <- Weak.deRefWeak weak
+          case maybeMVar of
+            Nothing -> throwIO SenderCanceled
+            Just mvar -> do
+              -- NOTE: 'takeMVar' may throw a 'BlockedIndefinitelyOnMVar' exception
+              MVar.takeMVar mvar `catch` \BlockedIndefinitelyOnMVar -> throwIO SenderCanceled
 
 -- * Synchronisation
 
@@ -125,22 +126,25 @@ newtype SyncOnce where
   SyncOnce :: (SendOnce (), RecvOnce ()) %1 -> SyncOnce
 
 deriving instance Consumable SyncOnce
+
 deriving instance Cancelable SyncOnce
 
 -- | Create a one-shot synchronisation.
 newSync :: Linear.IO (SyncOnce, SyncOnce)
 newSync =
-  let (>>=) = (Linear.>>=) in do
-    (sender1, receiver1) <- new
-    (sender2, receiver2) <- new
-    Linear.return
-      ( SyncOnce (sender1, receiver2)
-      , SyncOnce (sender2, receiver1)
-      )
+  let (>>=) = (Linear.>>=)
+   in do
+        (sender1, receiver1) <- new
+        (sender2, receiver2) <- new
+        Linear.return
+          ( SyncOnce (sender1, receiver2),
+            SyncOnce (sender2, receiver1)
+          )
 
 -- | Synchronise on a one-shot synchronisation.
 sync :: SyncOnce %1 -> Linear.IO ()
 sync (SyncOnce (sender, receiver)) =
-  let (>>) = (Linear.>>) in do
-    send sender ()
-    recv receiver
+  let (>>) = (Linear.>>)
+   in do
+        send sender ()
+        recv receiver

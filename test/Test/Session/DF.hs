@@ -1,26 +1,25 @@
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Test.Session.DF where
 
-import Prelude.Linear              hiding (Dual)
 import Control.Concurrent.Channel.Session.DF
-import Control.Concurrent.Linear   (forkIO_)
-import Data.Proxy                  (Proxy(..))
-import Data.Type.Priority          (Priority(..))
-import Data.Type.Period            (Period(..), Empty, At, type (<), type (+))
-import System.IO.Linear            qualified as Linear
-import System.IO.Linear.Cancelable (Cancelable(..))
-import Test.HUnit                  (Test(..), Assertable(..), Assertion)
-import Test.HUnit.Linear           (assertOutput, assertException)
-import Unsafe.Linear               qualified as Unsafe
-
+import Control.Concurrent.Linear (forkIO_)
+import Data.Proxy (Proxy (..))
+import Data.Type.Period (At, Empty, Period (..), type (+), type (<))
+import Data.Type.Priority (Priority (..))
+import Prelude.Linear hiding (Dual)
+import System.IO.Linear qualified as Linear
+import System.IO.Linear.Cancelable (Cancelable (..))
+import Test.HUnit (Assertable (..), Assertion, Test (..))
+import Test.HUnit.Linear (assertException, assertOutput)
+import Unsafe.Linear qualified as Unsafe
 
 -- * Ping
 
--- |Test sending a ping across threads.
+-- | Test sending a ping across threads.
 pingWorks :: Test
 pingWorks = TestLabel "ping" $ TestCase (assert main)
   where
@@ -38,8 +37,6 @@ pingWorks = TestLabel "ping" $ TestCase (assert main)
       (here, there) <- new
       fork _
       _
-
-
 
 -- * Ping
 
@@ -61,7 +58,6 @@ pingWorks = TestLabel "ping" $ TestCase (assert (runSeshIO main))
     pong s = do
       ((), s) <- recv s
       close s
-
 
 -- * Calculator
 
@@ -115,7 +111,6 @@ calcWorks = TestLabel "calc" $ TestList
       close s
       return $ x == 9
 
-
 -- * Cancellation
 
 -- |Test the interaction of cancel with send and receive.
@@ -139,7 +134,6 @@ cancelWorks = TestLabel "cancel" $ TestList
       () <- send @0 ((), s)
       return ()
 
-
 -- * Deadlock (does not compile, rightfully)
 
 -- deadlockFails :: Test
@@ -153,7 +147,6 @@ cancelWorks = TestLabel "cancel" $ TestList
 --                 send @1 (void, s2)
 --       (void, ()) <- recv @0 r2
 --       send @1 (void, s1)
-
 
 -- * Cyclic scheduler
 
@@ -219,7 +212,10 @@ schedWorks = TestLabel "sched" $ TestCase (assert (runSeshIO conf))
 
 -- * Rebindable Syntax
 
-fail   = error
-(>>)   = (>>>)
-(>>=)  = (>>>=)
+fail = error
+
+(>>) = (>>>)
+
+(>>=) = (>>>=)
+
 return = ireturn

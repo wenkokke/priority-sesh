@@ -1,24 +1,26 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE NoStarIsType    #-}
-{-# LANGUAGE TypeFamilies    #-}
-{-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE NoStarIsType #-}
 
 module Data.Type.Nat.Extra
-  ( Nat(..)
-  , type Max
-  , type Min
-  , type (+)
-  , type (*)
-  , type (<)
-  ) where
+  ( Nat (..),
+    type Max,
+    type Min,
+    type (+),
+    type (*),
+    type (<),
+  )
+where
 
-import Prelude.Linear     ( Ordering(LT) )
-import Data.Type.Equality ( type (==) )
-import Data.Type.Bool     ( If )
-import GHC.TypeNats       ( Nat(..), CmpNat, type (<=?), type (+), type (*) )
+import Data.Type.Bool (If)
+import Data.Type.Equality (type (==))
+import GHC.TypeNats (CmpNat, Nat (..), type (*), type (+), type (<=?))
+import Prelude.Linear (Ordering (LT))
 
-infix  4 <
+infix 4 <
+
 infixl 9 `Min`, `Max`
 
 -- | Type-level '<' as a constraint

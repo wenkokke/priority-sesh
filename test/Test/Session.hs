@@ -1,23 +1,22 @@
-{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Test.Session where
 
-import Prelude.Linear              hiding (Dual)
 import Control.Concurrent.Channel.Session
-import Control.Concurrent.Linear   (forkIO_)
-import Control.Functor.Linear      (Monad(..), return)
-import Data.Proxy                  (Proxy(..))
-import System.IO.Linear            qualified as Linear
-import System.IO.Linear.Cancelable (Cancelable(..))
-import Test.HUnit                  (Test(..), Assertable(..), Assertion)
-import Test.HUnit.Linear           (assertOutput, assertException)
-import Unsafe.Linear               qualified as Unsafe
-
+import Control.Concurrent.Linear (forkIO_)
+import Control.Functor.Linear (Monad (..), return)
+import Data.Proxy (Proxy (..))
+import Prelude.Linear hiding (Dual)
+import System.IO.Linear qualified as Linear
+import System.IO.Linear.Cancelable (Cancelable (..))
+import Test.HUnit (Assertable (..), Assertion, Test (..))
+import Test.HUnit.Linear (assertException, assertOutput)
+import Unsafe.Linear qualified as Unsafe
 
 -- * Ping
 
--- |Test sending a ping across threads.
+-- | Test sending a ping across threads.
 pingWorks :: Test
 pingWorks = TestLabel "ping" $ TestCase (assert main)
   where
@@ -29,10 +28,10 @@ pingWorks = TestLabel "ping" $ TestCase (assert main)
       ((), s) <- recv s
       close s
 
-
 -- * Calculator Server
 
 type CalcServer = Recv CalcOp ()
+
 type CalcClient = Dual CalcServer
 
 data CalcOp
@@ -43,11 +42,9 @@ instance Consumable CalcOp where
   consume (Neg s) = consume s
   consume (Add s) = consume s
 
-
 -- | The calculator server offers a choice between various calculations.
 calcServer :: CalcServer %1 -> Linear.IO ()
 calcServer s = offer s $ \case
-
   -- Offer negation:
   Neg s -> do
     (x, s) <- recv s
@@ -81,23 +78,26 @@ addClient s = do
   return (r == 9)
 
 calcWorks :: Test
-calcWorks = TestLabel "calc" $ TestList
-  [ TestLabel "neg" $ TestCase (assert negMain)
-  , TestLabel "add" $ TestCase (assert addMain)
-  ]
+calcWorks =
+  TestLabel "calc" $
+    TestList
+      [ TestLabel "neg" $ TestCase (assert negMain),
+        TestLabel "add" $ TestCase (assert addMain)
+      ]
   where
     negMain = connect calcServer >>= negClient
     addMain = connect calcServer >>= addClient
 
-
 -- * Cancelation
 
--- |Test the interaction of cancel with send and receive.
+-- | Test the interaction of cancel with send and receive.
 cancelWorks :: Test
-cancelWorks = TestLabel "cancel" $ TestList
-  [ TestLabel "recv" $ TestCase (assertException (Proxy @CommunicationException) cancelAndRecv)
-  , TestLabel "send" $ TestCase (assert cancelAndSend)
-  ]
+cancelWorks =
+  TestLabel "cancel" $
+    TestList
+      [ TestLabel "recv" $ TestCase (assertException (Proxy @CommunicationException) cancelAndRecv),
+        TestLabel "send" $ TestCase (assert cancelAndSend)
+      ]
   where
     -- Server cancels, client tries to receive.
     cancelAndRecv :: Linear.IO ()
@@ -112,10 +112,10 @@ cancelWorks = TestLabel "cancel" $ TestList
       () <- send ((), s)
       return ()
 
-
 -- * Summation server
 
 type SumServer = Recv SumOp ()
+
 type SumClient = Dual SumServer
 
 data SumOp
@@ -130,7 +130,6 @@ instance Consumable SumOp where
 --   received, at which point it sends back the sum.
 sumServer :: Int %1 -> SumServer %1 -> Linear.IO ()
 sumServer tot s = offer s $ \case
-
   -- More numbers:
   More s -> do
     (x, s) <- recv s
@@ -166,7 +165,6 @@ sumWorks :: Test
 sumWorks = TestLabel "sum" $ TestCase (assert main)
   where
     main = connect (sumServer 0) >>= sumClient
-
 
 -- * Rebindable Syntax
 
